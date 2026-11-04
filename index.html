@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>ระบบชี้เป้าหม้อแปลงเสี่ยงเหมืองบิตคอยน์ (TR Bitcoin Screening) | กบล.(น1)</title>
+  
+  <!-- Preconnect & Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS for Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <style>
+    /* CSS Variables: Dark & Light Themes */
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --accent-pea: #8b5cf6;
+      --high-risk: #ef4444;
+      --high-risk-bg: rgba(239, 68, 68, 0.15);
+      --med-risk: #f59e0b;
+      --med-risk-bg: rgba(245, 158, 11, 0.15);
+      --low-risk: #10b981;
+      --low-risk-bg: rgba(16, 185, 129, 0.15);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Dark Mode (Default) */
+    body.dark-mode {
+      --bg: #0b0f19;
+      --bg-radial: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0b0f19 75%);
+      --card-bg: rgba(17, 24, 39, 0.92);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(255, 255, 255, 0.18);
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --text-soft: #cbd5e1;
+      --input-bg: rgba(15, 23, 42, 0.85);
+      --input-border: rgba(255, 255, 255, 0.15);
+      --subcard-bg: rgba(30, 41, 59, 0.55);
+      --table-header: rgba(30, 41, 59, 0.85);
+      --table-hover: rgba(51, 65, 85, 0.35);
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Light Mode */
+    body.light-mode {
+      --bg: #f8fafc;
+      --bg-radial: radial-gradient(circle at 50% 0%, #ede9fe 0%, #f8fafc 75%);
+      --card-bg: rgba(255, 255, 255, 0.98);
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-hover-border: rgba(148, 163, 184, 0.5);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-soft: #334155;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --subcard-bg: #f1f5f9;
+      --table-header: #f1f5f9;
+      --table-hover: #f1f5f9;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Reset & Prevent Mobile Overflow */
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden !important;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    *, *:before, *:after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      background-image: var(--bg-radial);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      padding-bottom: 70px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    h1, h2, h3, h4, .font-prompt {
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 14px;
+      overflow-x: hidden;
+    }
+
+    /* Header Bar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-title-row h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin: 0;
+    }
+
+    body.dark-mode .header-title-row h1 {
+      background: linear-gradient(135deg, #ffffff 40%, #c4b5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    body.light-mode .header-title-row h1 {
+      color: #1e1b4b;
+    }
+
+    .badge-pea {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(124, 58, 237, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      color: var(--accent-pea);
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    /* 3 NAVIGATION TABS (CLEAN & SLEEK) */
+    .nav-tabs-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      width: max-content;
+      max-width: 100%;
+    }
+
+    .nav-tab-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+      white-space: nowrap;
+      min-height: 48px;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text);
+      border-color: var(--card-hover-border);
+    }
+
+    .nav-tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary-light);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .badge-count {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: var(--transition);
+      margin-bottom: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* MODERN CUSTOM SELECT (NO ANCIENT LOOK) */
+    select {
+      width: 100%;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 11px 40px 11px 14px;
+      font-size: 15px;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 500;
+      outline: none;
+      min-height: 48px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23818cf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px;
+      transition: var(--transition);
+      box-sizing: border-box;
+    }
+
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    select option {
+      background-color: #1e1b4b;
+      color: #ffffff;
+      padding: 8px;
+    }
+
+    body.light-mode select option {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+
+    /* STRICT NUMERIC INPUTS */
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 16px; /* Prevents auto-zoom in Safari iOS */
+      font-family: 'Sarabun', sans-serif;
+      outline: none;
+      transition: var(--transition);
+      min-height: 48px;
+      box-sizing: border-box;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    .num-input {
+      font-family: 'Fira Code', monospace !important;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      min-height: 48px;
+      text-decoration: none;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--input-border);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12.5px;
+      min-height: 38px;
+    }
+
+    /* Dynamic Feeder Cards Grid */
+    .feeder-dynamic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+      width: 100%;
+    }
+
+    .feeder-card {
+      background: var(--subcard-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      transition: var(--transition);
+      box-sizing: border-box;
+    }
+
+    .feeder-card.abnormal {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.08);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.2);
+    }
+
+    .feeder-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    /* Current Total Sum Grid (Responsive) */
+    .current-sum-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      width: 100%;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .current-sum-cell {
+      background: var(--input-bg);
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .current-sum-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .current-sum-val {
+      font-family: 'Fira Code', monospace;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* Map Layout */
+    .map-container-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      width: 100%;
+    }
+
+    #inspectionMap {
+      width: 100%;
+      height: 560px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--card-border);
+      z-index: 10;
+    }
+
+    .map-sidebar-list {
+      max-height: 560px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tr-target-item {
+      background: var(--subcard-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .tr-target-item:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    /* Tables */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--table-header);
+      color: var(--text-soft);
+      padding: 10px 12px;
+      font-weight: 600;
+      font-family: 'Prompt', sans-serif;
+      border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+      font-family: 'Fira Code', monospace;
+    }
+
+    tr:hover td {
+      background: var(--table-hover);
+    }
+
+    /* Form Fields Grid */
+    .form-group {
+      margin-bottom: 14px;
+      width: 100%;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+
+    .form-label span.desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* LINE TRACING STACKED CARDS (MOBILE-FRIENDLY) */
+    .trace-card {
+      background: var(--subcard-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      transition: var(--transition);
+    }
+    .trace-card:hover {
+      border-color: var(--card-hover-border);
+    }
+    .trace-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .trace-badge {
+      background: var(--primary);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .trace-current-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    /* BOTTOM NAVIGATION BAR (MOBILE & IPAD <= 1024px) */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 62px;
+      background: var(--card-bg);
+      border-top: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 1000;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .bottom-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      height: 100%;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Prompt', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .bottom-nav-item .icon {
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .bottom-nav-item.active {
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    .bottom-nav-item.active .icon {
+      transform: scale(1.15);
+    }
+
+    .bottom-nav-item .badge-pill {
+      position: absolute;
+      top: 5px;
+      right: calc(50% - 22px);
+      background: #ef4444;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 9999px;
+    }
+
+    /* IPAD & TABLET RULES (<= 1024px) */
+    @media (max-width: 1024px) {
+      .nav-tabs-wrapper {
+        display: none !important;
+      }
+      .bottom-nav {
+        display: flex !important;
+      }
+      body {
+        padding-bottom: 0 !important;
+      }
+      .container {
+        padding-bottom: 0 !important;
+      }
+    }
+
+    /* MOBILE ZERO-OVERFLOW RULES (<768px) */
+    @media (max-width: 768px) {
+      html, body {
+        height: 100%;
+        overflow-x: hidden;
+      }
+      body {
+        padding-bottom: 0 !important;
+      }
+      .container {
+        padding: 6px 8px 0 8px !important;
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        max-height: 100dvh;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      header {
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        flex-shrink: 0;
+      }
+      .card {
+        padding: 10px;
+      }
+      #tab-map {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+      }
+      .map-container-layout {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        height: 100%;
+      }
+      .map-main-card {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0 !important;
+        padding: 6px !important;
+      }
+      #inspectionMap {
+        height: 100% !important;
+        min-height: 0;
+        flex: 1;
+        width: 100%;
+        border-radius: var(--radius-sm);
+      }
+      .map-sidebar-card {
+        display: none !important;
+      }
+      .mobile-tr-selector-bar {
+        display: block !important;
+        padding: 6px 10px !important;
+        margin-bottom: 6px !important;
+        flex-shrink: 0;
+      }
+      #tab-inspection, #tab-monitor {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+      }
+      .feeder-dynamic-grid {
+        grid-template-columns: 1fr;
+      }
+      .current-sum-grid {
+        grid-template-columns: repeat(2, 1fr) 1fr;
+      }
+      .step3-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .btn {
+        width: 100%;
+      }
+      .tr-selector-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .tr-selector-row select {
+        width: 100% !important;
+      }
+      .header-title-row h1 {
+        font-size: 1.05rem;
+      }
+      .trace-current-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-left">
+        <div class="header-title-row">
+          <h1>ระบบชี้เป้าหม้อแปลงเสี่ยงเหมืองบิตคอยน์</h1>
+          <span class="badge-pea">⚡ กบล.(น1) เชียงใหม่</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Cloud Sync Status Indicator -->
+        <div id="cloudStatusBadge" onclick="openGasUrlPrompt()" title="คลิกเพื่อตั้งค่า Web App URL เชื่อมต่อ Google Sheets" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 4px 10px; border-radius: 9999px; background: var(--card-bg); border: 1px solid var(--card-border); cursor:pointer;">
+          <span id="cloudDot" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></span>
+          <span id="cloudStatusText">โหมดออฟไลน์</span>
+        </div>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button class="btn-icon" onclick="toggleTheme()" title="สลับโหมด มืด / สว่าง">
+          <span id="themeIcon">☀️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 3 MAIN NAVIGATION TABS (HOME IS MAP) -->
+    <div class="nav-tabs-wrapper">
+      <div class="nav-tabs">
+        <button class="nav-tab-btn active" id="tabBtnMap" onclick="switchTab('map')">
+          <span>🗺️ แผนที่ชี้เป้าลงตรวจ</span>
+          <span class="badge-count">12</span>
+        </button>
+        <button class="nav-tab-btn" id="tabBtnInspection" onclick="switchTab('inspection')">
+          <span>📝 บันทึกผลตรวจเช็คหน้างาน</span>
+        </button>
+        <button class="nav-tab-btn" id="tabBtnMonitor" onclick="switchTab('monitor')">
+          <span>📋 รายการหม้อแปลงที่ต้องตรวจสอบ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 1 (HOME): INSPECTION MAP (DEFAULT LANDING PAGE) -->
+    <!-- ================================================================= -->
+    <div id="tab-map" class="tab-content">
+      <!-- Mobile Target Selector Bar (Visible only on Mobile/Tablet <= 768px) -->
+      <div class="mobile-tr-selector-bar card" style="display:none; padding:6px 10px; margin-bottom:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:11.5px; font-weight:600; color:var(--text-soft);">🎯 เลือกหม้อแปลงเป้าหมาย:</span>
+          <span id="mobileTargetCount" style="font-size:11px; color:var(--text-muted);">12 ลูก</span>
+        </div>
+        <div>
+          <select id="mobileMapTRSelect" onchange="onSelectMobileMapTR(this.value)" style="width:100%; min-height:38px; font-size:13px; font-weight:600;"></select>
+        </div>
+      </div>
+
+      <div class="map-container-layout">
+        
+        <!-- Left: Map Area -->
+        <div class="card map-main-card" style="padding: 10px; display:flex; flex-direction:column;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:var(--text-muted);">
+              📍 แตะหมุดเพื่อดูข้อมูล, นำทาง, และบันทึกผล
+            </span>
+            <div style="display:flex; gap:4px;">
+              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('dark')">🌙 มืด</button>
+              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('osm')">🗺️ ปกติ</button>
+              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('satellite')">🛰️ ดาวเทียม</button>
+            </div>
+          </div>
+          <div id="inspectionMap" style="flex:1;"></div>
+        </div>
+
+        <!-- Right: Transformers List (Desktop Only) -->
+        <div class="card map-sidebar-card">
+          <div class="card-header">
+            <div class="card-title" style="font-size:1.05rem;">
+              <span>📋 รายชื่อหม้อแปลงเป้าหมาย</span>
+            </div>
+            <span id="mapTargetCount" style="font-size:12px; color:var(--text-muted);">12 ลูก</span>
+          </div>
+          <div class="map-sidebar-list" id="mapSidebarList"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: FIELD INSPECTION & DYNAMIC FEEDER WORKFLOW -->
+    <!-- ================================================================= -->
+    <div id="tab-inspection" class="tab-content" style="display:none;">
+      
+      <!-- Target Transformer Selector Card -->
+      <div class="card">
+        <div class="tr-selector-row" style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; width:100%;">
+          <div style="flex:1; width:100%;">
+            <label class="form-label" style="font-weight:600;">เลือกหม้อแปลงเป้าหมายที่กำลังตรวจ:</label>
+            <select id="inspectionTRSelect" onchange="selectInspectionTR(this.value)"></select>
+          </div>
+          <button class="btn btn-outline" onclick="openNavToCurrentTR()" style="flex-shrink:0;">
+            🧭 นำทาง Google Maps
+          </button>
+        </div>
+        <div id="targetTrSummary" style="font-size:12.5px; color:var(--text-soft); margin-top:8px;"></div>
+      </div>
+
+      <!-- STEP 1: DYNAMIC FEEDER MEASUREMENTS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⚡ ขั้นตอนที่ 1: ตรวจวัดกระแสที่ตู้หม้อแปลง (Feeder Measurements)</span>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="addNewFeeder()">
+            + เพิ่มฟีดเดอร์
+          </button>
+        </div>
+
+        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">
+          กดปุ่ม <strong>"+ เพิ่มฟีดเดอร์"</strong> เพื่อเพิ่มตู้ฟีดเดอร์ตามจริง (1-4 ฟีดเดอร์) พร้อมเลือก Dropdown ระบุฟีดเดอร์ และกรอกกระแสด้วยแป้นตัวเลข:
+        </p>
+
+        <!-- Dynamic Feeders Grid -->
+        <div id="dynamicFeederContainer" class="feeder-dynamic-grid"></div>
+
+        <!-- Total Sum Display (Fluid Grid) -->
+        <div style="margin-top:16px; padding:12px; background:var(--subcard-bg); border-radius:var(--radius-sm); border:1px solid var(--card-border);">
+          <div style="font-size:13px; font-weight:600; font-family:'Prompt',sans-serif; margin-bottom:4px;">
+            📊 ผลรวมกระแสทั้งหม้อแปลง (บันทึกเข้าคอลัมน์ J, K, L, M)
+          </div>
+          <div class="current-sum-grid">
+            <div class="current-sum-cell">
+              <div class="current-sum-label">Ia รวม</div>
+              <div class="current-sum-val" id="sumIaDisplay" style="color:#38bdf8;">0.0</div>
+            </div>
+            <div class="current-sum-cell">
+              <div class="current-sum-label">Ib รวม</div>
+              <div class="current-sum-val" id="sumIbDisplay" style="color:#38bdf8;">0.0</div>
+            </div>
+            <div class="current-sum-cell">
+              <div class="current-sum-label">Ic รวม</div>
+              <div class="current-sum-val" id="sumIcDisplay" style="color:#38bdf8;">0.0</div>
+            </div>
+            <div class="current-sum-cell">
+              <div class="current-sum-label">In รวม</div>
+              <div class="current-sum-val" id="sumInDisplay" style="color:#ef4444;">0.0</div>
+            </div>
+            <div class="current-sum-cell">
+              <div class="current-sum-label">kW คำนวณ</div>
+              <div class="current-sum-val" id="sumKwDisplay" style="color:#10b981;">0.0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Anomaly Feeder Callout -->
+        <div id="feederAnomalyAlert" style="margin-top:10px; display:none;"></div>
+      </div>
+
+      <!-- STEP 2: LINE TRACING LOG (POLE BY POLE) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🚶‍♂️ ขั้นตอนที่ 2: บันทึกการเดินไล่วัดตาม Line (Pole-by-Pole Tracing)</span>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="addLineTracePoint()">
+            + เพิ่มจุดวัดตามเสา
+          </button>
+        </div>
+
+        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">
+          เดินวัดกระแสตามเสาไฟเพื่อสังเกตจุดที่กระแส In ดรอปลง (บันทึกประวัติลงชีตย่อย <code>บันทึกไล่สาย</code>):
+        </p>
+
+        <!-- Mobile-friendly Stacked Cards -->
+        <div id="lineTraceCardContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+      </div>
+
+      <!-- STEP 3: CONCLUSION & SINGLE SUBMIT BUTTON -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🏁 ขั้นตอนที่ 3: สรุปผลการตรวจและบันทึกหลักฐาน</span>
+          </div>
+        </div>
+
+        <div class="step3-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Left Column -->
+          <div>
+            <div class="form-group">
+              <label class="form-label">ผลการตรวจยืนยันหน้างาน: <span class="desc">(*จำเป็น)</span></label>
+              <select id="inspectionStatusSelect">
+                <option value="พบการละเมิดจริง (Mining Confirmed)">🚨 พบการละเมิดจริง (Confirmed Mining)</option>
+                <option value="ไม่พบการละเมิด (โหลดปกติ / False Positive)">🟢 ไม่พบการละเมิด (Normal Load / ปลดความเสี่ยง)</option>
+                <option value="โหลดผิดปกติแต่ยังไม่พบจุดละเมิด (รอตรวจซ้ำ)">⚠️ โหลดผิดปกติแต่ยังไม่พบจุดละเมิด (รอตรวจซ้ำ)</option>
+                <option value="มิเตอร์ชำรุด / kVA ไม่ตรง">🔧 มิเตอร์ชำรุด / ป้าย kVA ไม่ตรง</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">บ้านเลขที่ / อาคารที่พบการละเมิด (ถ้ามี):</label>
+              <input type="text" id="violatingBuildingInput" placeholder="เช่น อาคารพาณิชย์ 3 ชั้น เลขที่ 14/2">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">รหัสพนักงานผู้ตรวจ: <span class="desc">(*บังคับเฉพาะตัวเลข)</span></label>
+              <input type="text" inputmode="numeric" pattern="[0-9]*" id="inspectorIdInput" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="เช่น 504123" class="num-input" style="text-align:left;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">หมายเหตุ / รายละเอียดหน้างาน:</label>
+              <textarea id="remarksInput" rows="3" placeholder="ระบุสภาพแวดล้อมหน้างาน อุปสรรค หรือข้อสังเกต..."></textarea>
+            </div>
+          </div>
+
+          <!-- Right Column: Photos -->
+          <div>
+            <label class="form-label">ถ่ายรูปหลักฐานหน้างาน (บันทึกลง Google Drive อัตโนมัติ):</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
+              
+              <!-- Transformer Photo -->
+              <div style="background:var(--subcard-bg); padding:12px; border-radius:10px; border:1px solid var(--card-border); text-align:center;">
+                <div style="font-size:12px; font-weight:600; margin-bottom:8px;">⚡ รูปหม้อแปลง/ตู้</div>
+                <input type="file" id="inputPhotoTR" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event, 'transformer')">
+                <button class="btn btn-sm btn-outline" style="width:100%;" onclick="document.getElementById('inputPhotoTR').click()">📸 ถ่ายภาพ</button>
+                <div id="previewTR" style="margin-top:6px; font-size:11.5px; color:var(--text-muted);">ยังไม่มีรูป</div>
+              </div>
+
+              <!-- Building Photo -->
+              <div style="background:var(--subcard-bg); padding:12px; border-radius:10px; border:1px solid var(--card-border); text-align:center;">
+                <div style="font-size:12px; font-weight:600; margin-bottom:8px;">🏢 รูปอาคารละเมิด</div>
+                <input type="file" id="inputPhotoLoc" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event, 'location')">
+                <button class="btn btn-sm btn-outline" style="width:100%;" onclick="document.getElementById('inputPhotoLoc').click()">📸 ถ่ายภาพ</button>
+                <div id="previewLoc" style="margin-top:6px; font-size:11.5px; color:var(--text-muted);">ยังไม่มีรูป</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ONLY ONE PROMINENT SUBMIT BUTTON -->
+        <div style="margin-top:18px;">
+          <button class="btn btn-primary" style="width:100%; min-height:50px; font-size:15px;" onclick="submitInspectionResult()">
+            ☁️ บันทึกผลเข้า Google Sheet
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: TRANSFORMERS TO INSPECT (MONITOR BEFORE VS AFTER) -->
+    <!-- ================================================================= -->
+    <div id="tab-monitor" class="tab-content" style="display:none;">
+      <!-- Google Apps Script Online Settings Card -->
+      <div class="card" style="margin-bottom: 14px;">
+        <div class="card-header">
+          <div class="card-title" style="font-size:1.05rem;">
+            <span>⚙️ ตั้งค่าการเชื่อมต่อ Google Sheets ออนไลน์ (Web App URL)</span>
+          </div>
+          <span style="font-size:11px; color:var(--text-muted);">Sheet ID: 1MAl3n2rz...</span>
+        </div>
+        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">
+          นำ <strong>Web App URL</strong> ที่ได้จากการ Deploy ใน Google Apps Script (ลงท้ายด้วย <code>/exec</code>) มาใส่ เพื่อเปิดใช้งานระบบซิงค์ข้อมูลและบันทึกผลภาคสนามแบบออนไลน์:
+        </p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1; min-width:240px; min-height:38px; font-size:13px; padding:6px 10px;">
+          <button class="btn btn-primary btn-sm" onclick="saveGasUrlFromInput()">💾 บันทึกการเชื่อมต่อ</button>
+          <button class="btn btn-outline btn-sm" onclick="testGasConnection()">🧪 ทดสอบเชื่อมต่อ</button>
+        </div>
+        <div id="gasConnStatusMsg" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📋 รายการหม้อแปลงที่ต้องตรวจสอบ (เปรียบเทียบผลตรวจ Before / After)</span>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="syncOnlineNow()">🔄 ดึงข้อมูลสดจากชีท</button>
+        </div>
+
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+          เปรียบเทียบความเสี่ยงเดิม (Col G) กับระดับความเสี่ยงหลังวัดจริง (Col AF) เพื่อยืนยันว่าการชี้เป้าเป็น True Positive (พบละเมิดจริง) หรือ False Positive:
+        </p>
+
+        <div class="table-responsive">
+          <table id="monitorComparisonTable">
+            <thead>
+              <tr>
+                <th>เลขหม้อแปลง</th>
+                <th>สถานที่</th>
+                <th>ความเสี่ยงเดิม (Col G)</th>
+                <th>Ia รวม</th>
+                <th>Ib รวม</th>
+                <th>Ic รวม</th>
+                <th>In รวม</th>
+                <th>In คำนวณ (Col N)</th>
+                <th>kW วัดจริง (Col O)</th>
+                <th>ระดับหลังวัด (Col AF)</th>
+                <th>สถานะการตรวจ</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Data & Storage Modules -->
+  <script src="transformers_target_data.js"></script>
+  <script src="photo_storage.js"></script>
+
+  <!-- Main JavaScript App Logic -->
+  <script>
+    // =========================================================================
+    // STATE & INITIALIZATION
+    // =========================================================================
+    const EMBEDDED_SPREADSHEET_ID = '1MAl3n2rzX4U1foeEZeRyklbutylYb0X3CJO2pH0bzNE';
+    // Web App URL ฝังถาวร เชื่อมต่อ Google Sheets ID 1MAl3n2rz... (ชีท "คะแนน" และ "บันทึกไล่สาย")
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwYPT1Ghw_mQpM-LtIGfPW0g4uKipkduJaAysG81oN5UZiJlzplquqYYePm2qusInJz/exec';
+
+    let currentMap = null;
+    let mapMarkers = [];
+    let activeTileLayer = null;
+    let targetTransformers = typeof TRANSFORMERS_TARGET_DATA !== 'undefined' ? TRANSFORMERS_TARGET_DATA : [];
+    let currentSelectedTR = null;
+    let dynamicFeeders = [];
+    let lineTracePoints = [];
+    let inspectionPhotos = { transformer: null, location: null };
+
+    // =========================================================================
+    // GOOGLE APPS SCRIPT ONLINE CONNECTION HELPERS
+    // =========================================================================
+    function getGasUrl() {
+      const saved = localStorage.getItem('tr_gas_api_url');
+      if (saved && saved.trim() !== '') return saved.trim();
+      if (DEFAULT_GAS_URL) {
+        localStorage.setItem('tr_gas_api_url', DEFAULT_GAS_URL);
+        return DEFAULT_GAS_URL;
+      }
+      return '';
+    }
+
+    function updateCloudStatus() {
+      const url = getGasUrl();
+      const dot = document.getElementById('cloudDot');
+      const text = document.getElementById('cloudStatusText');
+      const input = document.getElementById('gasUrlInput');
+      if (input && !input.value && url) {
+        input.value = url;
+      }
+      if (url) {
+        if (dot) dot.style.background = '#10b981';
+        if (text) text.innerText = 'ออนไลน์ (คลาวด์)';
+      } else {
+        if (dot) dot.style.background = '#94a3b8';
+        if (text) text.innerText = 'โหมดออฟไลน์';
+      }
+    }
+
+    function openGasUrlPrompt() {
+      const current = getGasUrl();
+      const entered = prompt('ระบุ Google Apps Script Web App URL เพื่อเปิดโหมดออนไลน์ (ลงท้ายด้วย /exec):', current);
+      if (entered !== null) {
+        localStorage.setItem('tr_gas_api_url', entered.trim());
+        updateCloudStatus();
+        const input = document.getElementById('gasUrlInput');
+        if (input) input.value = entered.trim();
+        if (entered.trim()) {
+          alert('บันทึกการตั้งค่าแล้ว! กำลังทดสอบดึงข้อมูลสดจากชีท...');
+          syncOnlineNow();
+        }
+      }
+    }
+
+    function saveGasUrlFromInput() {
+      const input = document.getElementById('gasUrlInput');
+      const val = input ? input.value.trim() : '';
+      localStorage.setItem('tr_gas_api_url', val);
+      updateCloudStatus();
+      const msg = document.getElementById('gasConnStatusMsg');
+      if (val) {
+        if (msg) msg.innerHTML = '<span style="color:#10b981;">✓ บันทึก Web App URL แล้ว กำลังทดสอบเชื่อมต่อ...</span>';
+        testGasConnection();
+      } else {
+        if (msg) msg.innerHTML = '<span style="color:#f59e0b;">สลับเป็นโหมดออฟไลน์ (บันทึกเฉพาะในเครื่อง)</span>';
+      }
+    }
+
+    async function testGasConnection() {
+      const url = getGasUrl();
+      const msg = document.getElementById('gasConnStatusMsg');
+      if (!url) {
+        if (msg) msg.innerHTML = '<span style="color:#ef4444;">กรุณากรอก Web App URL ก่อนทดสอบ</span>';
+        alert('กรุณากรอก Web App URL ก่อนทดสอบ');
+        return;
+      }
+      if (msg) msg.innerHTML = '<span style="color:var(--primary);">⏳ กำลังเชื่อมต่อไปยัง Google Apps Script...</span>';
+      try {
+        const res = await fetch(url + '?action=get_targets');
+        const json = await res.json();
+        if (json.success) {
+          if (msg) msg.innerHTML = `<span style="color:#10b981;">🎉 เชื่อมต่อ Google Sheets สำเร็จ! (พบหม้อแปลง ${json.count || 0} ลูกในชีท)</span>`;
+          alert(`🎉 เชื่อมต่อ Google Sheets สำเร็จ!\nพบหม้อแปลง ${json.count || 0} ลูกในชีท "คะแนน"`);
+          updateCloudStatus();
+          syncOnlineNow();
+        } else {
+          if (msg) msg.innerHTML = `<span style="color:#ef4444;">เชื่อมต่อได้แต่สคริปต์แจ้งข้อผิดพลาด: ${json.error}</span>`;
+          alert('เชื่อมต่อได้แต่สคริปต์แจ้งข้อผิดพลาด: ' + json.error);
+        }
+      } catch (err) {
+        if (msg) msg.innerHTML = `<span style="color:#ef4444;">เชื่อมต่อขัดข้อง: ${err.message} (โปรดตรวจสอบว่า Deploy แบบสิทธิ์ Anyone หรือยัง)</span>`;
+        alert('เชื่อมต่อขัดข้อง: ' + err.message + '\n\nคำแนะนำ: โปรดตรวจสอบว่าตอน Deploy ได้ตั้งค่า "Who has access (ผู้มีสิทธิ์เข้าถึง)" เป็น "Anyone (ทุกคน)" หรือไม่');
+      }
+    }
+
+    // Strict Numeric Sanitizer
+    function sanitizeNumeric(el) {
+      el.value = el.value.replace(/[^0-9.]/g, '');
+      const parts = el.value.split('.');
+      if (parts.length > 2) {
+        el.value = parts[0] + '.' + parts.slice(1).join('');
+      }
+    }
+
+    // Theme Switcher
+    function initTheme() {
+      const savedTheme = localStorage.getItem('tr_theme') || 'dark';
+      document.body.className = savedTheme + '-mode';
+      document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    }
+
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark-mode');
+      const newTheme = isDark ? 'light' : 'dark';
+      document.body.className = newTheme + '-mode';
+      document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('tr_theme', newTheme);
+      if (currentMap && activeTileLayer) {
+        setMapLayer(newTheme === 'dark' ? 'dark' : 'osm');
+      }
+    }
+
+    // Tab Switcher (Map is Default Home)
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+      });
+
+      if (tabId === 'map') {
+        const btnTop = document.getElementById('tabBtnMap');
+        if (btnTop) btnTop.classList.add('active');
+        const btnBtm = document.getElementById('bNavMap');
+        if (btnBtm) btnBtm.classList.add('active');
+        const mapEl = document.getElementById('tab-map');
+        if (mapEl) {
+          mapEl.classList.add('active');
+          mapEl.style.display = window.innerWidth <= 768 ? 'flex' : 'block';
+        }
+        setTimeout(() => {
+          if (!currentMap) initMap();
+          else currentMap.invalidateSize();
+        }, 100);
+      } else if (tabId === 'inspection') {
+        const btnTop = document.getElementById('tabBtnInspection');
+        if (btnTop) btnTop.classList.add('active');
+        const btnBtm = document.getElementById('bNavInspection');
+        if (btnBtm) btnBtm.classList.add('active');
+        const inspEl = document.getElementById('tab-inspection');
+        if (inspEl) {
+          inspEl.classList.add('active');
+          inspEl.style.display = 'block';
+        }
+      } else if (tabId === 'monitor') {
+        const btnTop = document.getElementById('tabBtnMonitor');
+        if (btnTop) btnTop.classList.add('active');
+        const btnBtm = document.getElementById('bNavMonitor');
+        if (btnBtm) btnBtm.classList.add('active');
+        const monEl = document.getElementById('tab-monitor');
+        if (monEl) {
+          monEl.classList.add('active');
+          monEl.style.display = 'block';
+        }
+        renderMonitorTable();
+      }
+    }
+
+    // =========================================================================
+    // DYNAMIC FEEDER BUILDER (+ ADD FEEDER WITH DROPDOWN)
+    // =========================================================================
+    function initDefaultFeeders() {
+      // Default to 1 Feeder
+      dynamicFeeders = [
+        { id: 'f_1', label: 'Feeder 1', ia: '', ib: '', ic: '', inVal: '' }
+      ];
+      renderDynamicFeeders();
+    }
+
+    function addNewFeeder() {
+      if (dynamicFeeders.length >= 6) {
+        alert('เพิ่มฟีดเดอร์ได้สูงสุด 6 ฟีดเดอร์');
+        return;
+      }
+      const num = dynamicFeeders.length + 1;
+      dynamicFeeders.push({
+        id: 'f_' + Date.now(),
+        label: `Feeder ${num}`,
+        ia: '', ib: '', ic: '', inVal: ''
+      });
+      renderDynamicFeeders();
+    }
+
+    function removeFeeder(feederId) {
+      if (dynamicFeeders.length <= 1) {
+        alert('ต้องมีอย่างน้อย 1 ฟีดเดอร์');
+        return;
+      }
+      dynamicFeeders = dynamicFeeders.filter(f => f.id !== feederId);
+      renderDynamicFeeders();
+    }
+
+    function renderDynamicFeeders() {
+      const container = document.getElementById('dynamicFeederContainer');
+      container.innerHTML = '';
+
+      dynamicFeeders.forEach((f, idx) => {
+        const card = document.createElement('div');
+        card.className = 'feeder-card';
+        card.id = `card_${f.id}`;
+
+        card.innerHTML = `
+          <div class="feeder-card-header">
+            <div style="display:flex; align-items:center; gap:8px; flex:1;">
+              <select onchange="updateFeederLabel('${f.id}', this.value)" style="min-height:38px; padding:6px 30px 6px 10px; font-size:13.5px; font-weight:600;">
+                <option value="Feeder 1" ${f.label === 'Feeder 1' ? 'selected' : ''}>Feeder 1</option>
+                <option value="Feeder 2" ${f.label === 'Feeder 2' ? 'selected' : ''}>Feeder 2</option>
+                <option value="Feeder 3" ${f.label === 'Feeder 3' ? 'selected' : ''}>Feeder 3</option>
+                <option value="Feeder 4" ${f.label === 'Feeder 4' ? 'selected' : ''}>Feeder 4</option>
+                <option value="Feeder 5" ${f.label === 'Feeder 5' ? 'selected' : ''}>Feeder 5</option>
+                <option value="Feeder 6" ${f.label === 'Feeder 6' ? 'selected' : ''}>Feeder 6</option>
+              </select>
+            </div>
+            <button onclick="removeFeeder('${f.id}')" title="ลบฟีดเดอร์นี้" style="background:none; border:none; color:#ef4444; font-size:18px; cursor:pointer; padding:4px 8px;">&times;</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div>
+              <label style="font-size:11.5px; color:var(--text-muted);">Ia (A):</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${f.ia}" oninput="sanitizeNumeric(this); updateFeederVal('${f.id}', 'ia', this.value)" placeholder="0.0">
+            </div>
+            <div>
+              <label style="font-size:11.5px; color:var(--text-muted);">Ib (A):</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${f.ib}" oninput="sanitizeNumeric(this); updateFeederVal('${f.id}', 'ib', this.value)" placeholder="0.0">
+            </div>
+            <div>
+              <label style="font-size:11.5px; color:var(--text-muted);">Ic (A):</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${f.ic}" oninput="sanitizeNumeric(this); updateFeederVal('${f.id}', 'ic', this.value)" placeholder="0.0">
+            </div>
+            <div>
+              <label style="font-size:11.5px; color:#ef4444; font-weight:600;">In (A):</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${f.inVal}" oninput="sanitizeNumeric(this); updateFeederVal('${f.id}', 'inVal', this.value)" placeholder="0.0" style="border-color:rgba(239,68,68,0.5);">
+            </div>
+          </div>
+
+          <div style="margin-top:8px; display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); font-family:'Fira Code',monospace;">
+            <span>Inc: <span id="inc_${f.id}">0.0</span>A</span>
+            <span>E: <span id="e_${f.id}">0.00</span></span>
+            <span>%Iub: <span id="iub_${f.id}">0%</span></span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      calculateAllFeeders();
+    }
+
+    function updateFeederLabel(id, val) {
+      const f = dynamicFeeders.find(item => item.id === id);
+      if (f) f.label = val;
+    }
+
+    function updateFeederVal(id, key, val) {
+      const f = dynamicFeeders.find(item => item.id === id);
+      if (f) {
+        f[key] = val;
+        calculateAllFeeders();
+      }
+    }
+
+    function calculateAllFeeders() {
+      let sumIa = 0, sumIb = 0, sumIc = 0, sumIn = 0;
+      let worstFeeder = null;
+      let maxE = 0;
+
+      dynamicFeeders.forEach(f => {
+        const ia = parseFloat(f.ia) || 0;
+        const ib = parseFloat(f.ib) || 0;
+        const ic = parseFloat(f.ic) || 0;
+        const inVal = parseFloat(f.inVal) || 0;
+
+        sumIa += ia; sumIb += ib; sumIc += ic; sumIn += inVal;
+
+        const iAvg = (ia + ib + ic) / 3;
+        const inc = Math.sqrt(Math.max(0, ia*ia + ib*ib + ic*ic - ia*ib - ib*ic - ic*ia));
+        const E = iAvg > 0 ? (inVal - inc) / iAvg : 0;
+        const maxDev = Math.max(Math.abs(ia - iAvg), Math.abs(ib - iAvg), Math.abs(ic - iAvg));
+        const iubPct = iAvg > 0 ? (maxDev / iAvg) * 100 : 0;
+
+        const incEl = document.getElementById(`inc_${f.id}`);
+        const eEl = document.getElementById(`e_${f.id}`);
+        const iubEl = document.getElementById(`iub_${f.id}`);
+        const cardEl = document.getElementById(`card_${f.id}`);
+
+        if (incEl) incEl.textContent = inc.toFixed(1);
+        if (eEl) eEl.textContent = E.toFixed(2);
+        if (iubEl) iubEl.textContent = iubPct.toFixed(0) + '%';
+
+        if (cardEl) {
+          if (E >= 0.9 || (inVal > 1.5 * iAvg && iAvg > 10)) {
+            cardEl.className = 'feeder-card abnormal';
+            if (E > maxE) {
+              maxE = E;
+              worstFeeder = f.label;
+            }
+          } else {
+            cardEl.className = 'feeder-card';
+          }
+        }
+      });
+
+      document.getElementById('sumIaDisplay').textContent = sumIa.toFixed(1);
+      document.getElementById('sumIbDisplay').textContent = sumIb.toFixed(1);
+      document.getElementById('sumIcDisplay').textContent = sumIc.toFixed(1);
+      document.getElementById('sumInDisplay').textContent = sumIn.toFixed(1);
+
+      const totalKw = (sumIa + sumIb + sumIc) * 0.23 * 0.9;
+      document.getElementById('sumKwDisplay').textContent = totalKw.toFixed(1);
+
+      const alertBox = document.getElementById('feederAnomalyAlert');
+      if (worstFeeder) {
+        alertBox.style.display = 'block';
+        alertBox.innerHTML = `
+          <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <strong style="color:#ef4444; font-size:13px;">🚨 ตรวจพบความผิดปกติเด่นชัดที่ ${worstFeeder} (กระแส In พุ่งสูง)</strong>
+              <div style="font-size:11.5px; color:var(--text-soft);">แนะนำให้เริ่มเดินไล่วัดตาม Line จากฟีดเดอร์นี้</div>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="setTraceFeederTarget('${worstFeeder}')">👉 เดินไล่สายฟีดเดอร์นี้</button>
+          </div>
+        `;
+      } else {
+        alertBox.style.display = 'none';
+      }
+    }
+
+    function setTraceFeederTarget(feederName) {
+      if (lineTracePoints.length === 0) {
+        addLineTracePoint(feederName);
+      }
+      const el = document.getElementById('lineTraceCardContainer');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // =========================================================================
+    // STEP 2: LINE TRACING LOG (POLE-BY-POLE STACKED CARDS)
+    // =========================================================================
+    function addLineTracePoint(feeder = 'Feeder 1') {
+      const idx = lineTracePoints.length + 1;
+      lineTracePoints.push({
+        id: Date.now(),
+        feeder: feeder,
+        poleName: `เสาต้นที่ ${idx}`,
+        ia: '', ib: '', ic: '', inVal: '',
+        note: ''
+      });
+      renderLineTraceCards();
+    }
+
+    function removeLineTracePoint(id) {
+      lineTracePoints = lineTracePoints.filter(p => p.id !== id);
+      renderLineTraceCards();
+    }
+
+    function renderLineTraceCards() {
+      const container = document.getElementById('lineTraceCardContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (lineTracePoints.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:18px; background:var(--subcard-bg); border-radius:8px; border:1px dashed var(--card-border); color:var(--text-muted); font-size:12.5px;">
+            ยังไม่มีจุดวัดตามเสา กดปุ่ม <strong>'+ เพิ่มจุดวัดตามเสา'</strong> เพื่อบันทึก
+          </div>
+        `;
+        return;
+      }
+
+      lineTracePoints.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'trace-card';
+        card.id = `trace_card_${p.id}`;
+
+        const analysisHTML = getTraceAnalysisHTML(p, i);
+
+        card.innerHTML = `
+          <div class="trace-card-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="trace-badge">จุดที่ ${i + 1}</span>
+              <select onchange="updateTraceData(${p.id}, 'feeder', this.value)" style="min-height:36px; padding:4px 28px 4px 8px; font-size:13px; font-weight:600; width:125px;">
+                <option value="Feeder 1" ${p.feeder === 'Feeder 1' ? 'selected' : ''}>Feeder 1</option>
+                <option value="Feeder 2" ${p.feeder === 'Feeder 2' ? 'selected' : ''}>Feeder 2</option>
+                <option value="Feeder 3" ${p.feeder === 'Feeder 3' ? 'selected' : ''}>Feeder 3</option>
+                <option value="Feeder 4" ${p.feeder === 'Feeder 4' ? 'selected' : ''}>Feeder 4</option>
+                <option value="Feeder 5" ${p.feeder === 'Feeder 5' ? 'selected' : ''}>Feeder 5</option>
+                <option value="Feeder 6" ${p.feeder === 'Feeder 6' ? 'selected' : ''}>Feeder 6</option>
+              </select>
+            </div>
+            <button onclick="removeLineTracePoint(${p.id})" title="ลบจุดวัดนี้" style="background:none; border:none; color:#ef4444; font-size:22px; cursor:pointer; padding:2px 8px; line-height:1;">&times;</button>
+          </div>
+
+          <div style="margin-top:8px;">
+            <input type="text" value="${p.poleName}" onchange="updateTraceData(${p.id}, 'poleName', this.value)" placeholder="ชื่อเสา / พิกัดสังเกต เช่น เสาปากซอย 3, หน้าตึกแถว 45/2" style="width:100%; min-height:36px; font-size:13px; padding:6px 10px;">
+          </div>
+
+          <div class="trace-current-grid" style="margin-top:8px;">
+            <div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:2px;">Ia (A)</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${p.ia}" oninput="sanitizeNumeric(this); updateTraceCurrent(${p.id}, 'ia', this.value)" placeholder="0.0" style="width:100%; min-height:36px; padding:6px 4px; font-size:13px; text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:2px;">Ib (A)</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${p.ib}" oninput="sanitizeNumeric(this); updateTraceCurrent(${p.id}, 'ib', this.value)" placeholder="0.0" style="width:100%; min-height:36px; padding:6px 4px; font-size:13px; text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:2px;">Ic (A)</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${p.ic}" oninput="sanitizeNumeric(this); updateTraceCurrent(${p.id}, 'ic', this.value)" placeholder="0.0" style="width:100%; min-height:36px; padding:6px 4px; font-size:13px; text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:11px; color:#ef4444; font-weight:700; display:block; margin-bottom:2px;">In (A)</label>
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="num-input" value="${p.inVal}" oninput="sanitizeNumeric(this); updateTraceCurrent(${p.id}, 'inVal', this.value)" placeholder="0.0" style="width:100%; min-height:36px; padding:6px 4px; font-size:13px; text-align:center; border-color:rgba(239,68,68,0.7); background:rgba(239,68,68,0.06);">
+            </div>
+          </div>
+
+          <div id="trace_analysis_${p.id}" style="margin-top:8px;">
+            ${analysisHTML}
+          </div>
+
+          <div style="margin-top:8px;">
+            <input type="text" value="${p.note}" onchange="updateTraceData(${p.id}, 'note', this.value)" placeholder="ข้อสังเกต / อาคารต้องสงสัย เช่น ตึกแถวติดแอร์หลายตัว" style="width:100%; min-height:36px; font-size:13px; padding:6px 10px;">
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function updateTraceData(id, field, value) {
+      const p = lineTracePoints.find(item => item.id === id);
+      if (p) {
+        p[field] = value;
+        if (field === 'feeder') {
+          refreshAllTraceAnalyses();
+        }
+      }
+    }
+
+    function updateTraceCurrent(id, field, value) {
+      const p = lineTracePoints.find(item => item.id === id);
+      if (p) {
+        p[field] = value;
+        refreshAllTraceAnalyses();
+      }
+    }
+
+    function updateSingleTraceAnalysisBox(id) {
+      const idx = lineTracePoints.findIndex(item => item.id === id);
+      if (idx === -1) return;
+      const box = document.getElementById(`trace_analysis_${id}`);
+      if (box) {
+        box.innerHTML = getTraceAnalysisHTML(lineTracePoints[idx], idx);
+      }
+    }
+
+    function refreshAllTraceAnalyses() {
+      lineTracePoints.forEach((p, idx) => {
+        const box = document.getElementById(`trace_analysis_${p.id}`);
+        if (box) {
+          box.innerHTML = getTraceAnalysisHTML(p, idx);
+        }
+      });
+    }
+
+    function getTraceAnalysisHTML(p, index) {
+      const ia = parseFloat(p.ia) || 0;
+      const ib = parseFloat(p.ib) || 0;
+      const ic = parseFloat(p.ic) || 0;
+      const inVal = parseFloat(p.inVal) || 0;
+
+      if (ia === 0 && ib === 0 && ic === 0 && inVal === 0) {
+        return `<div style="font-size:11.5px; color:var(--text-muted); padding:3px 4px;">💡 กรอกค่าวัด Ia, Ib, Ic, In เพื่อประเมินความสมดุลเฟส (%Iub), ฮาร์มอนิก N (E) และตรวจจับเหมืองบิตคอยน์ 3 เฟส</div>`;
+      }
+
+      const kw = (ia + ib + ic) * 0.23 * 0.90;
+      const iAvg = (ia + ib + ic) / 3;
+      const inc = Math.sqrt(Math.max(0, ia*ia + ib*ib + ic*ic - ia*ib - ib*ic - ic*ia));
+      const E = iAvg > 0 ? (inVal - inc) / iAvg : 0;
+      const minersEst = Math.round(kw / 3.3);
+
+      // Criteria D: Phase Unbalance (%Iub)
+      const maxDev = Math.max(Math.abs(ia - iAvg), Math.abs(ib - iAvg), Math.abs(ic - iAvg));
+      const iubPct = iAvg > 0 ? (maxDev / iAvg) * 100 : 0;
+
+      // Classifications according to PEA Theory:
+      // %Iub <= 6: สมดุลมาก, <= 16: ค่อนข้างสมดุล, > 16: ไม่สมดุล
+      const isBalanced = iubPct <= 16;
+      const isHighlyBalanced = iubPct <= 6;
+
+      // Find previous point on the same feeder
+      let prevPoint = null;
+      for (let k = index - 1; k >= 0; k--) {
+        if (lineTracePoints[k].feeder === p.feeder) {
+          prevPoint = lineTracePoints[k];
+          break;
+        }
+      }
+
+      let dropAlerts = [];
+      let loadDropDetected = false;
+      let neutralDropDetected = false;
+
+      if (prevPoint) {
+        const prevIa = parseFloat(prevPoint.ia) || 0;
+        const prevIb = parseFloat(prevPoint.ib) || 0;
+        const prevIc = parseFloat(prevPoint.ic) || 0;
+        const prevIn = parseFloat(prevPoint.inVal) || 0;
+        const prevKw = (prevIa + prevIb + prevIc) * 0.23 * 0.90;
+        const prevIavg = (prevIa + prevIb + prevIc) / 3;
+
+        // 1. Detect 3-Phase Load Drop (Significant kW drop between adjacent poles)
+        if (prevKw >= 12 && kw < prevKw) {
+          const deltaKw = kw - prevKw;
+          const deltaIavg = iAvg - prevIavg;
+          const dropKwPct = ((prevKw - kw) / prevKw) * 100;
+          if (deltaKw <= -10 || (prevKw >= 18 && dropKwPct >= 35)) {
+            loadDropDetected = true;
+            const droppedMiners = Math.round(Math.abs(deltaKw) / 3.3);
+            dropAlerts.push(`
+              <div style="background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:6px; padding:6px 10px; margin-bottom:6px; color:#f87171; font-size:12px; font-weight:600;">
+                ⚡ ตรวจพบโหลด 3 เฟสดรอปลงฮวบ ${deltaKw.toFixed(1)} kW (${deltaIavg.toFixed(1)} A/เฟส, ลดลง ${dropKwPct.toFixed(0)}%) เทียบเท่าโหลดเครื่องขุด ~${droppedMiners} เครื่อง หายไประหว่างช่วงเสานี้กับ ${prevPoint.poleName || 'เสาก่อนหน้า'}
+              </div>
+            `);
+          }
+        }
+
+        // 2. Detect Neutral Current Drop (In drop indicating tap drop)
+        if (prevIn > 0 && inVal < prevIn) {
+          const deltaIn = inVal - prevIn;
+          const dropPct = ((prevIn - inVal) / prevIn) * 100;
+          if (deltaIn <= -8 || (prevIn >= 15 && dropPct >= 30)) {
+            neutralDropDetected = true;
+            dropAlerts.push(`
+              <div style="background:rgba(239, 68, 68, 0.15); border:1px solid #ef4444; border-radius:6px; padding:6px 10px; margin-bottom:6px; color:#f87171; font-size:12px; font-weight:600;">
+                ⚠️ ตรวจพบกระแส In ดรอปลง ${deltaIn.toFixed(1)} A (ลดลง ${dropPct.toFixed(0)}%) เมื่อเทียบกับ ${prevPoint.poleName || 'เสาก่อนหน้า'}
+              </div>
+            `);
+          }
+        }
+      }
+
+      // 3-PHASE BITCOIN MINING RISK LOGIC (PEA Criteria Theory)
+      let riskBadge = '';
+
+      // High Risk:
+      // 1. Balanced 3-phase load (%Iub <= 16%) with high 3rd harmonic (E >= 0.6)
+      // 2. Balanced 3-phase load (%Iub <= 16%) with significant 3rd harmonic (E >= 0.3) and mining load (kW >= 25)
+      // 3. Extreme 3rd harmonic (E >= 0.9) with load >= 15 kW
+      // 4. Pole-to-pole drop indicating tap off line
+      const isMiningHigh = (isBalanced && E >= 0.6) ||
+                           (isBalanced && E >= 0.3 && kw >= 25) ||
+                           (E >= 0.9 && kw >= 15) ||
+                           loadDropDetected || neutralDropDetected;
+
+      // Medium Risk:
+      // 1. Balanced (%Iub <= 16%) with moderate harmonic (0.3 <= E < 0.6)
+      // 2. High harmonic (E >= 0.6) but unbalanced phase (%Iub > 16%)
+      // 3. Highly balanced (%Iub <= 6%) with heavy continuous load (kW >= 30)
+      const isMiningMed = (isBalanced && E >= 0.3 && E < 0.6) ||
+                          (!isBalanced && E >= 0.6) ||
+                          (isHighlyBalanced && kw >= 30);
+
+      if (isMiningHigh) {
+        let reason = '';
+        if (loadDropDetected || neutralDropDetected) {
+          reason = `ตรวจพบกระแส/โหลดดรอปฮวบระหว่างเสา (สงสัยจุดแยกสายเข้าอาคาร)`;
+        } else if (isBalanced && E >= 0.6) {
+          reason = `เครื่องขุด 3 เฟสชัดเจน: เฟสสมดุล (%Iub=${iubPct.toFixed(1)}%) ร่วมกับฮาร์มอนิก 3rd สูงมาก (E=${E.toFixed(2)})`;
+        } else if (isBalanced && E >= 0.3 && kw >= 25) {
+          reason = `เครื่องขุด 3 เฟส: เฟสสมดุล (%Iub=${iubPct.toFixed(1)}%) + ฮาร์มอนิก 3rd (E=${E.toFixed(2)}) + โหลดสูง ${kw.toFixed(1)} kW`;
+        } else {
+          reason = `ฮาร์มอนิกลำดับ 3 ในสายนิวทรัลสูงรุนแรงมาก (E=${E.toFixed(2)})`;
+        }
+        riskBadge = `<span style="background:#ef4444; color:#fff; padding:2px 8px; border-radius:4px; font-weight:700; font-size:11px;">🔴 จุดเสี่ยงสูง</span> <span style="color:#ef4444; font-size:12px; font-weight:500;">(${reason})</span>`;
+      } else if (isMiningMed) {
+        let reason = '';
+        if (isBalanced && E >= 0.3) {
+          reason = `เฝ้าระวัง: เฟสสมดุล (%Iub=${iubPct.toFixed(1)}%) แต่พบร่องรอยฮาร์มอนิก 3rd (E=${E.toFixed(2)})`;
+        } else if (!isBalanced && E >= 0.6) {
+          reason = `เฝ้าระวัง: มีฮาร์มอนิก 3rd สูง (E=${E.toFixed(2)}) แต่เฟสยังไม่สมดุล (%Iub=${iubPct.toFixed(1)}%)`;
+        } else {
+          reason = `เฝ้าระวัง: โหลด 3 เฟสสมดุลมาก (%Iub=${iubPct.toFixed(1)}%, ${kw.toFixed(1)} kW)`;
+        }
+        riskBadge = `<span style="background:#f59e0b; color:#fff; padding:2px 8px; border-radius:4px; font-weight:700; font-size:11px;">🟡 จุดเสี่ยงปานกลาง</span> <span style="color:#f59e0b; font-size:12px; font-weight:500;">(${reason})</span>`;
+      } else {
+        let normalReason = '';
+        if (iubPct > 16 && inVal > 10) {
+          normalReason = `โหลดเฟสไม่สมดุลทั่วไป (%Iub=${iubPct.toFixed(1)}%, In เกิดจาก 50Hz Unbalance มิใช่ฮาร์มอนิก E=${E.toFixed(2)})`;
+        } else {
+          normalReason = `โหลดทั่วไปตามเกณฑ์ปกติ (E=${E.toFixed(2)}, %Iub=${iubPct.toFixed(1)}%, ${kw.toFixed(1)} kW)`;
+        }
+        riskBadge = `<span style="background:#10b981; color:#fff; padding:2px 8px; border-radius:4px; font-weight:700; font-size:11px;">🟢 จุดปกติ</span> <span style="color:var(--text-muted); font-size:12px;">(${normalReason})</span>`;
+      }
+
+      // Metric Summary Chips (4 Technical Pillars of กบล.น1)
+      const balanceColor = iubPct <= 6 ? '#10b981' : (iubPct <= 16 ? '#f59e0b' : '#94a3b8');
+      const harmonicColor = E >= 0.6 ? '#ef4444' : (E >= 0.3 ? '#f59e0b' : '#10b981');
+
+      const metricsSummary = `
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; font-size:11px;">
+          <span style="background:var(--input-bg); border:1px solid var(--card-border); padding:3px 7px; border-radius:6px; color:var(--text-soft);">
+            ⚖️ ความสมดุล: <strong style="color:${balanceColor};">%Iub = ${iubPct.toFixed(1)}%</strong> (${iubPct <= 6 ? 'สมดุลมาก' : (iubPct <= 16 ? 'ค่อนข้างสมดุล' : 'ไม่สมดุล')})
+          </span>
+          <span style="background:var(--input-bg); border:1px solid var(--card-border); padding:3px 7px; border-radius:6px; color:var(--text-soft);">
+            〰️ ฮาร์มอนิก 3rd: <strong style="color:${harmonicColor};">E = ${E.toFixed(2)}</strong>
+          </span>
+          <span style="background:var(--input-bg); border:1px solid var(--card-border); padding:3px 7px; border-radius:6px; color:var(--text-soft);">
+            ⚡ โหลด: <strong>${kw.toFixed(1)} kW</strong> (~${iAvg.toFixed(1)} A/เฟส | ~${minersEst} เครื่อง)
+          </span>
+          <span style="background:var(--input-bg); border:1px solid var(--card-border); padding:3px 7px; border-radius:6px; color:var(--text-soft);">
+            📊 สายนิวทรัล: In = <strong>${inVal.toFixed(1)}A</strong> (Inc = <strong>${inc.toFixed(1)}A</strong>)
+          </span>
+        </div>
+      `;
+
+      return `
+        <div>
+          ${dropAlerts.join('')}
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            ${riskBadge}
+          </div>
+          ${metricsSummary}
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // STEP 3: SUBMIT TO GOOGLE SHEET (ONLY ONE BUTTON)
+    // =========================================================================
+    async function handlePhotoUpload(e, type) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await compressImage(file, 1280, 0.8);
+        inspectionPhotos[type] = dataUrl;
+        document.getElementById(type === 'transformer' ? 'previewTR' : 'previewLoc').innerHTML = '✅ ถ่ายรูปแล้ว';
+        document.getElementById(type === 'transformer' ? 'previewTR' : 'previewLoc').style.color = '#10b981';
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+      }
+    }
+
+    async function submitInspectionResult() {
+      if (!currentSelectedTR) {
+        alert('กรุณาเลือกหม้อแปลงเป้าหมายก่อนบันทึก');
+        return;
+      }
+
+      const sumIa = parseFloat(document.getElementById('sumIaDisplay').textContent) || 0;
+      const sumIb = parseFloat(document.getElementById('sumIbDisplay').textContent) || 0;
+      const sumIc = parseFloat(document.getElementById('sumIcDisplay').textContent) || 0;
+      const sumIn = parseFloat(document.getElementById('sumInDisplay').textContent) || 0;
+      const status = document.getElementById('inspectionStatusSelect').value;
+      const building = document.getElementById('violatingBuildingInput').value.trim();
+      const inspectorId = document.getElementById('inspectorIdInput').value.trim();
+      const remarks = document.getElementById('remarksInput').value.trim();
+
+      // Update local object
+      currentSelectedTR.inspected = true;
+      currentSelectedTR.actualIa = sumIa;
+      currentSelectedTR.actualIb = sumIb;
+      currentSelectedTR.actualIc = sumIc;
+      currentSelectedTR.actualIn = sumIn;
+      currentSelectedTR.violationStatus = status;
+      currentSelectedTR.violationBuilding = building;
+      currentSelectedTR.inspector = inspectorId;
+      currentSelectedTR.remarks = remarks;
+
+      // Save locally
+      const localOverrides = JSON.parse(localStorage.getItem('tr_inspection_status') || '{}');
+      localOverrides[currentSelectedTR.trId] = {
+        inspected: true,
+        actualIa: sumIa, actualIb: sumIb, actualIc: sumIc, actualIn: sumIn,
+        violationStatus: status, violationBuilding: building,
+        inspector: inspectorId, remarks: remarks, lineTracing: lineTracePoints
+      };
+      localStorage.setItem('tr_inspection_status', JSON.stringify(localOverrides));
+
+      // Sync to Google Apps Script
+      const gasUrl = getGasUrl();
+      if (!gasUrl) {
+        alert('บันทึกข้อมูลในเครื่องเรียบร้อยแล้ว\n(หากต้องการให้ซิงค์เข้า Google Sheet อัตโนมัติ กรุณาระบุ Web App URL ที่แถบด้านบน หรือหน้า รายการ)');
+        renderSidebarList();
+        renderMapMarkers();
+        return;
+      }
+
+      const payload = {
+        trId: currentSelectedTR.trId,
+        actualKva: currentSelectedTR.actualKva || currentSelectedTR.kva || 100,
+        actualIa: sumIa,
+        actualIb: sumIb,
+        actualIc: sumIc,
+        actualIn: sumIn,
+        violationStatus: status,
+        violationBuilding: building,
+        inspector: inspectorId ? `รหัส ${inspectorId}` : '-',
+        remarks: remarks,
+        notes: (building ? `อาคาร: ${building} | ` : '') + (remarks ? `หมายเหตุ: ${remarks}` : ''),
+        transformerPhotoBase64: inspectionPhotos.transformer,
+        violationPhotoBase64: inspectionPhotos.location,
+        lineTracing: lineTracePoints
+      };
+
+      try {
+        const res = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('🎉 บันทึกผลตรวจเข้า Google Sheet (ชีท "คะแนน" และ "บันทึกไล่สาย") สำเร็จ!');
+        } else {
+          alert('บันทึกในเครื่องแล้ว แต่การเขียนชีทขัดข้อง: ' + json.error);
+        }
+      } catch (err) {
+        alert('บันทึกในเครื่องเรียบร้อยแล้ว (การเชื่อมต่อคลาวด์ขัดข้อง: ' + err.message + ')');
+      }
+
+      renderSidebarList();
+      renderMapMarkers();
+      renderMonitorTable();
+    }
+
+    // =========================================================================
+    // TARGET SELECTION & MAP POPUP INTEGRATION
+    // =========================================================================
+    function populateTRSelect() {
+      const select = document.getElementById('inspectionTRSelect');
+      const mobileSelect = document.getElementById('mobileMapTRSelect');
+      if (select) select.innerHTML = '';
+      if (mobileSelect) {
+        mobileSelect.innerHTML = `<option value="">-- แตะเลือกหม้อแปลงเป้าหมาย (${targetTransformers.length} ลูก) --</option>`;
+      }
+      const countEl = document.getElementById('mobileTargetCount');
+      if (countEl) countEl.textContent = targetTransformers.length + ' ลูก';
+      const mapCountEl = document.getElementById('mapTargetCount');
+      if (mapCountEl) mapCountEl.textContent = targetTransformers.length + ' ลูก';
+
+      targetTransformers.forEach((tr, i) => {
+        const text = `${i + 1}. [${tr.trId}] ${tr.place} (${tr.office})`;
+        if (select) {
+          const opt = document.createElement('option');
+          opt.value = tr.trId;
+          opt.textContent = text;
+          select.appendChild(opt);
+        }
+        if (mobileSelect) {
+          const mOpt = document.createElement('option');
+          mOpt.value = tr.trId;
+          mOpt.textContent = `[${tr.initialRisk || 'สูง'}] ${tr.trId} : ${tr.place}`;
+          mobileSelect.appendChild(mOpt);
+        }
+      });
+
+      if (targetTransformers.length > 0) {
+        selectInspectionTR(targetTransformers[0].trId);
+      }
+    }
+
+    function onSelectMobileMapTR(trId) {
+      if (!trId || !currentMap) return;
+      const tr = targetTransformers.find(t => t.trId === trId);
+      if (tr && tr.lat && tr.lng) {
+        currentMap.flyTo([tr.lat, tr.lng], 16, { animate: true });
+        const marker = mapMarkers.find(m => m.options && m.options.trId === trId);
+        if (marker) {
+          setTimeout(() => marker.openPopup(), 400);
+        }
+      }
+    }
+
+    function openInspectionForSelectedMobileTR() {
+      const mobileSelect = document.getElementById('mobileMapTRSelect');
+      const trId = mobileSelect && mobileSelect.value ? mobileSelect.value : (currentSelectedTR ? currentSelectedTR.trId : targetTransformers[0]?.trId);
+      if (trId) {
+        openInspectionForTR(trId);
+      }
+    }
+
+    function selectInspectionTR(trId) {
+      currentSelectedTR = targetTransformers.find(t => t.trId === trId);
+      if (!currentSelectedTR) return;
+
+      const select = document.getElementById('inspectionTRSelect');
+      if (select && select.value !== trId) select.value = trId;
+
+      const mobileSelect = document.getElementById('mobileMapTRSelect');
+      if (mobileSelect && mobileSelect.value !== trId) mobileSelect.value = trId;
+
+      document.getElementById('targetTrSummary').innerHTML = `
+        📍 สถานที่: <strong>${currentSelectedTR.place}</strong> (${currentSelectedTR.office}) | 
+        ความเสี่ยงเดิม: <span style="color:#ef4444; font-weight:700;">${currentSelectedTR.initialRisk || 'สูง'}</span> | 
+        kW เดิม: <strong>${currentSelectedTR.kw || '-'}</strong> kW
+      `;
+
+      // Reset dynamic feeders and line tracing
+      initDefaultFeeders();
+      lineTracePoints = [];
+      renderLineTraceCards();
+    }
+
+    function openInspectionForTR(trId) {
+      switchTab('inspection');
+      selectInspectionTR(trId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openNavToCurrentTR() {
+      if (currentSelectedTR && currentSelectedTR.lat && currentSelectedTR.lng) {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${currentSelectedTR.lat},${currentSelectedTR.lng}`, '_blank');
+      } else {
+        alert('หม้อแปลงลูกนี้ไม่มีพิกัด');
+      }
+    }
+
+    // =========================================================================
+    // MAP & POPUP WITH "บันทึกข้อมูล" BUTTON
+    // =========================================================================
+    function initMap() {
+      currentMap = L.map('inspectionMap').setView([18.7883, 98.9853], 8);
+      activeTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18, attribution: '&copy; OpenStreetMap'
+      }).addTo(currentMap);
+      renderMapMarkers();
+      renderSidebarList();
+    }
+
+    function setMapLayer(type) {
+      if (!currentMap) return;
+      if (activeTileLayer) currentMap.removeLayer(activeTileLayer);
+      const url = type === 'satellite' 
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : (type === 'osm' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+      activeTileLayer = L.tileLayer(url, { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(currentMap);
+    }
+
+    function renderMapMarkers() {
+      if (!currentMap) return;
+      mapMarkers.forEach(m => currentMap.removeLayer(m));
+      mapMarkers = [];
+
+      targetTransformers.forEach(tr => {
+        if (!tr.lat || !tr.lng) return;
+        const color = tr.inspected ? '#10b981' : (tr.initialRisk === 'สูง' ? '#ef4444' : '#f59e0b');
+        const icon = L.divIcon({
+          className: 'custom-pin',
+          html: `<div style="width:28px; height:28px; border-radius:50%; background:${color}; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px;">${tr.inspected ? '✓' : '!'}</div>`,
+          iconSize: [28, 28]
+        });
+
+        const m = L.marker([tr.lat, tr.lng], { icon: icon, trId: tr.trId }).addTo(currentMap);
+        m.bindPopup(`
+          <div style="font-family:'Sarabun',sans-serif; min-width:240px; max-width:calc(100vw - 40px); line-height:1.4;">
+            <strong style="font-size:14px; font-family:'Prompt',sans-serif;">${tr.trId}</strong><br>
+            <span style="font-size:12.5px; color:#475569;">${tr.place} (${tr.office})</span><br>
+            <div style="margin:4px 0;">
+              <span style="font-size:11px; padding:2px 6px; border-radius:4px; background:${color}; color:#fff; font-weight:700;">
+                เสี่ยง${tr.initialRisk} (${tr.inspected ? 'ตรวจแล้ว' : 'รอตรวจ'})
+              </span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${tr.lat},${tr.lng}" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:4px; background:#4f46e5; color:#fff; padding:6px 10px; border-radius:6px; font-size:12px; text-decoration:none; font-weight:600;">
+                🧭 นำทาง Google Maps
+              </a>
+              <button onclick="openInspectionForTR('${tr.trId}')" style="background:#10b981; color:#fff; border:none; padding:7px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; font-family:'Prompt',sans-serif;">
+                📝 บันทึกข้อมูลตรวจเช็ค
+              </button>
+            </div>
+          </div>
+        `);
+        mapMarkers.push(m);
+      });
+    }
+
+    function renderSidebarList() {
+      const container = document.getElementById('mapSidebarList');
+      if (!container) return;
+      container.innerHTML = '';
+      targetTransformers.forEach(tr => {
+        const div = document.createElement('div');
+        div.className = 'tr-target-item';
+        div.onclick = () => {
+          if (currentMap && tr.lat && tr.lng) currentMap.flyTo([tr.lat, tr.lng], 15);
+        };
+        div.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong>${tr.trId}</strong>
+            <span style="font-size:11px; color:${tr.inspected ? '#10b981' : '#f59e0b'}; font-weight:700;">${tr.inspected ? '✓ ตรวจแล้ว' : 'รอตรวจ'}</span>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted);">${tr.place}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // =========================================================================
+    // MONITOR TAB: BEFORE VS AFTER COMPARISON
+    // =========================================================================
+    function renderMonitorTable() {
+      const tbody = document.querySelector('#monitorComparisonTable tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      targetTransformers.forEach(tr => {
+        const row = document.createElement('tr');
+        const badgeColor = tr.initialRisk === 'สูง' ? '#ef4444' : '#f59e0b';
+        row.innerHTML = `
+          <td><strong>${tr.trId}</strong></td>
+          <td style="font-family:'Sarabun',sans-serif;">${tr.place}</td>
+          <td><span style="padding:2px 8px; border-radius:4px; background:${badgeColor}; color:#fff; font-size:11px; font-weight:700;">${tr.initialRisk || 'สูง'}</span></td>
+          <td>${tr.actualIa || '-'}</td>
+          <td>${tr.actualIb || '-'}</td>
+          <td>${tr.actualIc || '-'}</td>
+          <td>${tr.actualIn || '-'}</td>
+          <td>${tr.calcIn || '-'}</td>
+          <td style="color:#10b981; font-weight:600;">${tr.calculatedKw || tr.kw || '-'}</td>
+          <td><strong>${tr.finalLevel || tr.initialRisk}</strong></td>
+          <td><span style="font-size:12px; color:${tr.inspected ? '#10b981' : '#f59e0b'}; font-weight:600;">${tr.inspected ? '✓ ตรวจแล้ว' : '⏳ รอตรวจ'}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function syncOnlineNow() {
+      const gasUrl = getGasUrl();
+      if (!gasUrl) {
+        alert('กรุณาระบุ Web App URL ก่อนดึงข้อมูล (คลิกที่ปุ่มสถานะคลาวด์ หรือระบุในการ์ดตั้งค่า)');
+        return;
+      }
+      try {
+        const res = await fetch(gasUrl + '?action=get_targets');
+        const json = await res.json();
+        if (json.success && json.transformers) {
+          json.transformers.forEach(item => {
+            const match = targetTransformers.find(t => t.trId === item.trId);
+            if (match) {
+              match.inspected = item.inspected;
+              match.actualIa = item.actualIa;
+              match.actualIb = item.actualIb;
+              match.actualIc = item.actualIc;
+              match.actualIn = item.actualIn;
+              match.calcIn = item.calcIn;
+              match.calculatedKw = item.calculatedKw;
+              match.finalLevel = item.finalLevel;
+              match.remarks = item.remarks;
+            }
+          });
+          renderMapMarkers();
+          renderSidebarList();
+          renderMonitorTable();
+          updateCloudStatus();
+          alert('🎉 ซิงค์ข้อมูลล่าสุดจาก Google Sheets สำเร็จ!');
+        }
+      } catch (err) {
+        alert('เชื่อมต่อขัดข้อง: ' + err.message);
+      }
+    }
+
+    // Handle orientation & window resize for responsive layout & map tiles
+    window.addEventListener('resize', () => {
+      const mapTab = document.getElementById('tab-map');
+      if (mapTab && mapTab.style.display !== 'none') {
+        mapTab.style.display = window.innerWidth <= 768 ? 'flex' : 'block';
+        if (currentMap) currentMap.invalidateSize();
+      }
+    });
+
+    // Initialize on Page Load (Map Tab is Default)
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      updateCloudStatus();
+      populateTRSelect();
+      initDefaultFeeders();
+      renderMonitorTable();
+      switchTab('map');
+    });
+  </script>
+  <!-- BOTTOM NAVIGATION BAR (FOR MOBILE & IPAD <= 1024px) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" id="bNavMap" onclick="switchTab('map')">
+      <span class="icon">🗺️</span>
+      <span>แผนที่</span>
+      <span class="badge-pill">12</span>
+    </button>
+    <button class="bottom-nav-item" id="bNavInspection" onclick="switchTab('inspection')">
+      <span class="icon">📝</span>
+      <span>ตรวจหน้างาน</span>
+    </button>
+    <button class="bottom-nav-item" id="bNavMonitor" onclick="switchTab('monitor')">
+      <span class="icon">📋</span>
+      <span>รายการ</span>
+    </button>
+  </nav>
+</body>
+</html>
