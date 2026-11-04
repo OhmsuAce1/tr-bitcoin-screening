@@ -989,8 +989,12 @@
 
         <!-- Total Sum Display (Fluid Grid) -->
         <div style="margin-top:16px; padding:12px; background:var(--subcard-bg); border-radius:var(--radius-sm); border:1px solid var(--card-border);">
-          <div style="font-size:13px; font-weight:600; font-family:'Prompt',sans-serif; margin-bottom:4px;">
-            📊 ผลรวมกระแสทั้งหม้อแปลง (บันทึกเข้าคอลัมน์ J, K, L, M)
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+            <div style="font-size:13px; font-weight:600; font-family:'Prompt',sans-serif;">
+              📊 ผลรวมกระแสทั้งหม้อแปลง (บันทึกเข้าคอลัมน์ J, K, L, M)
+            </div>
+            <!-- Live Risk Level Indicator -->
+            <div id="totalSumRiskBadge"></div>
           </div>
           <div class="current-sum-grid">
             <div class="current-sum-cell">
@@ -1014,6 +1018,8 @@
               <div class="current-sum-val" id="sumKwDisplay" style="color:#10b981;">0.0</div>
             </div>
           </div>
+          <!-- Live Risk Analysis Banner -->
+          <div id="totalSumRiskAlert" style="margin-top:10px; display:none;"></div>
         </div>
 
         <!-- Anomaly Feeder Callout -->
@@ -1141,7 +1147,7 @@
 
         <!-- ONLY ONE PROMINENT SUBMIT BUTTON -->
         <div style="margin-top:18px;">
-          <button class="btn btn-primary" style="width:100%; min-height:50px; font-size:15px;" onclick="submitInspectionResult()">
+          <button id="btnSubmitInspection" class="btn btn-primary" style="width:100%; min-height:50px; font-size:15px;" onclick="submitInspectionResult()">
             ☁️ บันทึกผลเข้า Google Sheet
           </button>
         </div>
@@ -1526,6 +1532,56 @@
       const totalKw = (sumIa + sumIb + sumIc) * 0.23 * 0.9;
       document.getElementById('sumKwDisplay').textContent = totalKw.toFixed(1);
 
+      // Live 3-Phase Risk Assessment for Total Transformer Sum
+      const totalSumRiskBadgeEl = document.getElementById('totalSumRiskBadge');
+      const totalSumRiskAlertEl = document.getElementById('totalSumRiskAlert');
+
+      if (sumIa > 0 || sumIb > 0 || sumIc > 0) {
+        const iAvgSum = (sumIa + sumIb + sumIc) / 3;
+        const incSum = Math.sqrt(
+          Math.max(0, sumIa*sumIa + sumIb*sumIb + sumIc*sumIc - sumIa*sumIb - sumIb*sumIc - sumIc*sumIa)
+        );
+        const maxDevSum = Math.max(Math.abs(sumIa - iAvgSum), Math.abs(sumIb - iAvgSum), Math.abs(sumIc - iAvgSum));
+        const iubPctSum = iAvgSum > 0 ? (maxDevSum / iAvgSum) * 100 : 0;
+        const eSum = incSum > 0 ? (sumIn - incSum) / incSum : (sumIn > 0 && iAvgSum > 0 ? sumIn / iAvgSum : 0);
+
+        const isBalancedMining = (eSum >= 0.6 && iubPctSum <= 16) || (eSum >= 0.3 && iubPctSum <= 6);
+
+        if (isBalancedMining) {
+          if (totalSumRiskBadgeEl) {
+            totalSumRiskBadgeEl.innerHTML = '<span style="background:#ef4444; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🚨 เสี่ยงสูง (เข้าข่ายเหมืองบิตคอยน์)</span>';
+          }
+          if (totalSumRiskAlertEl) {
+            totalSumRiskAlertEl.style.display = 'block';
+            totalSumRiskAlertEl.innerHTML = `
+              <div style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:6px; padding:8px 10px; font-size:12px; color:#ef4444; line-height:1.4;">
+                <strong>🚨 ผลรวมกระแสเข้าข่ายเครื่องขุดบิตคอยน์ 3 เฟส:</strong> โหลดระหว่างเฟสสมดุล (%Iub = ${iubPctSum.toFixed(1)}%) และกระแส In สูงผิดปกติจากฮาร์มอนิกลำดับ 3 (E = ${eSum.toFixed(2)}, In วัดได้=${sumIn.toFixed(1)} A, Inc คำนวณ=${incSum.toFixed(1)} A)
+              </div>
+            `;
+          }
+        } else if (iubPctSum > 25 && sumIn > 0) {
+          if (totalSumRiskBadgeEl) {
+            totalSumRiskBadgeEl.innerHTML = '<span style="background:#10b981; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🟢 โหลดไม่สมดุลทั่วไป (50Hz)</span>';
+          }
+          if (totalSumRiskAlertEl) {
+            totalSumRiskAlertEl.style.display = 'block';
+            totalSumRiskAlertEl.innerHTML = `
+              <div style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); border-radius:6px; padding:8px 10px; font-size:12px; color:#10b981; line-height:1.4;">
+                <strong>🟢 กระแส In เกิดจากโหลดเฟสไม่สมดุลปกติ (50Hz Unbalance):</strong> %Iub = ${iubPctSum.toFixed(1)}% ไม่พบลักษณะเฉพาะของเครื่องขุดบิตคอยน์ 3 เฟส
+              </div>
+            `;
+          }
+        } else {
+          if (totalSumRiskBadgeEl) {
+            totalSumRiskBadgeEl.innerHTML = '<span style="background:#10b981; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">🟢 โหลดปกติ</span>';
+          }
+          if (totalSumRiskAlertEl) totalSumRiskAlertEl.style.display = 'none';
+        }
+      } else {
+        if (totalSumRiskBadgeEl) totalSumRiskBadgeEl.innerHTML = '';
+        if (totalSumRiskAlertEl) totalSumRiskAlertEl.style.display = 'none';
+      }
+
       const alertBox = document.getElementById('feederAnomalyAlert');
       if (worstFeeder) {
         alertBox.style.display = 'block';
@@ -1892,6 +1948,14 @@
         return;
       }
 
+      const submitBtn = document.getElementById('btnSubmitInspection');
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ กำลังบันทึกข้อมูลและอัปโหลดรูปภาพเข้า Google Sheets...';
+        submitBtn.style.opacity = '0.7';
+      }
+
       const sumIa = parseFloat(document.getElementById('sumIaDisplay').textContent) || 0;
       const sumIb = parseFloat(document.getElementById('sumIbDisplay').textContent) || 0;
       const sumIc = parseFloat(document.getElementById('sumIcDisplay').textContent) || 0;
@@ -1926,8 +1990,14 @@
       const gasUrl = getGasUrl();
       if (!gasUrl) {
         alert('บันทึกข้อมูลในเครื่องเรียบร้อยแล้ว\n(หากต้องการให้ซิงค์เข้า Google Sheet อัตโนมัติ กรุณาระบุ Web App URL ที่แถบด้านบน หรือหน้า รายการ)');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+          submitBtn.style.opacity = '1';
+        }
         renderSidebarList();
         renderMapMarkers();
+        populateTRSelect();
         return;
       }
 
@@ -1956,17 +2026,26 @@
         });
         const json = await res.json();
         if (json.success) {
-          alert('🎉 บันทึกผลตรวจเข้า Google Sheet (ชีท "คะแนน" และ "บันทึกไล่สาย") สำเร็จ!');
+          if (submitBtn) submitBtn.innerHTML = '✅ บันทึกสำเร็จ! กำลังซิงค์ข้อมูลใหม่...';
+          // Auto-sync fresh data directly from Google Sheet!
+          await syncOnlineNow(true);
+          alert(`🎉 บันทึกผลตรวจหม้อแปลง ${currentSelectedTR.trId} เข้า Google Sheet เรียบร้อยแล้ว!\nระบบได้อัปเดตสถานะเป็น "ตรวจแล้ว" และรีเฟรชข้อมูลทั้งระบบทันที`);
         } else {
           alert('บันทึกในเครื่องแล้ว แต่การเขียนชีทขัดข้อง: ' + json.error);
         }
       } catch (err) {
         alert('บันทึกในเครื่องเรียบร้อยแล้ว (การเชื่อมต่อคลาวด์ขัดข้อง: ' + err.message + ')');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+          submitBtn.style.opacity = '1';
+        }
+        renderSidebarList();
+        renderMapMarkers();
+        renderMonitorTable();
+        populateTRSelect();
       }
-
-      renderSidebarList();
-      renderMapMarkers();
-      renderMonitorTable();
     }
 
     // =========================================================================
@@ -1979,23 +2058,29 @@
       if (mobileSelect) {
         mobileSelect.innerHTML = `<option value="">-- แตะเลือกหม้อแปลงเป้าหมาย (${targetTransformers.length} ลูก) --</option>`;
       }
+
+      const inspectedCount = targetTransformers.filter(t => t.inspected).length;
+      const pendingCount = targetTransformers.length - inspectedCount;
+
       const countEl = document.getElementById('mobileTargetCount');
-      if (countEl) countEl.textContent = targetTransformers.length + ' ลูก';
+      if (countEl) countEl.innerHTML = `<span style="color:#10b981; font-weight:700;">✓ ${inspectedCount}</span> | <span style="color:#ef4444; font-weight:700;">⏳ ${pendingCount}</span> (${targetTransformers.length} ลูก)`;
+      
       const mapCountEl = document.getElementById('mapTargetCount');
-      if (mapCountEl) mapCountEl.textContent = targetTransformers.length + ' ลูก';
+      if (mapCountEl) mapCountEl.innerHTML = `<span style="color:#10b981; font-weight:700;">✓ ตรวจแล้ว ${inspectedCount}</span> | <span style="color:#ef4444; font-weight:700;">⏳ รอตรวจ ${pendingCount}</span>`;
 
       targetTransformers.forEach((tr, i) => {
-        const text = `${i + 1}. [${tr.trId}] ${tr.place} (${tr.office})`;
+        const statusTag = tr.inspected ? '🟢 [ตรวจแล้ว]' : '🔴 [รอตรวจ]';
+        const label = `${i + 1}. ${statusTag} [${tr.trId}] ${tr.place} (${tr.office || 'PEA'})`;
         if (select) {
           const opt = document.createElement('option');
           opt.value = tr.trId;
-          opt.textContent = text;
+          opt.textContent = label;
           select.appendChild(opt);
         }
         if (mobileSelect) {
           const mOpt = document.createElement('option');
           mOpt.value = tr.trId;
-          mOpt.textContent = `[${tr.initialRisk || 'สูง'}] ${tr.trId} : ${tr.place}`;
+          mOpt.textContent = label;
           mobileSelect.appendChild(mOpt);
         }
       });
@@ -2038,10 +2123,14 @@
       const mobileSelect = document.getElementById('mobileMapTRSelect');
       if (mobileSelect && mobileSelect.value !== trId) mobileSelect.value = trId;
 
+      const statusBadge = currentSelectedTR.inspected
+        ? `<span style="color:#10b981; font-weight:700;">🟢 ตรวจแล้ว</span> (ระดับหลังวัด: <strong>${currentSelectedTR.finalLevel || currentSelectedTR.initialRisk}</strong>)`
+        : `<span style="color:#ef4444; font-weight:700;">⏳ รอตรวจ</span> (ความเสี่ยงเดิม: <strong>${currentSelectedTR.initialRisk || 'สูง'}</strong>)`;
+
       document.getElementById('targetTrSummary').innerHTML = `
-        📍 สถานที่: <strong>${currentSelectedTR.place}</strong> (${currentSelectedTR.office}) | 
-        ความเสี่ยงเดิม: <span style="color:#ef4444; font-weight:700;">${currentSelectedTR.initialRisk || 'สูง'}</span> | 
-        kW เดิม: <strong>${currentSelectedTR.kw || '-'}</strong> kW
+        📍 สถานที่: <strong>${currentSelectedTR.place}</strong> (${currentSelectedTR.office || '-'}) | 
+        สถานะ: ${statusBadge} | 
+        kW: <strong>${formatDec(currentSelectedTR.calculatedKw || currentSelectedTR.kw)}</strong> kW
       `;
 
       // Reset dynamic feeders and line tracing
@@ -2207,22 +2296,32 @@
           iconSize: [28, 28]
         });
 
+        const statusHtml = tr.inspected
+          ? `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:#10b981; color:#fff; font-weight:700;">✓ ตรวจแล้ว (ระดับหลังวัด: ${tr.finalLevel || 'ต่ำ'})</span>`
+          : `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:${color}; color:#fff; font-weight:700;">⏳ รอตรวจ (ความเสี่ยงเดิม: ${tr.initialRisk || 'สูง'})</span>`;
+
+        const detailsHtml = tr.inspected
+          ? `<div style="font-size:11.5px; color:var(--text-soft); margin:6px 0; background:rgba(16,185,129,0.08); padding:6px; border-radius:4px; border:1px solid rgba(16,185,129,0.2);">
+               Ia=${formatDec(tr.actualIa)}, Ib=${formatDec(tr.actualIb)}, Ic=${formatDec(tr.actualIc)}, In=${formatDec(tr.actualIn)} A<br>
+               Inc=${formatDec(tr.calcIn)} A | kW=${formatDec(tr.calculatedKw)} kW
+             </div>`
+          : '';
+
         const m = L.marker([tr.lat, tr.lng], { icon: icon, trId: tr.trId }).addTo(currentMap);
         m.bindPopup(`
           <div style="font-family:'Sarabun',sans-serif; min-width:240px; max-width:calc(100vw - 40px); line-height:1.4;">
             <strong style="font-size:14px; font-family:'Prompt',sans-serif;">${tr.trId}</strong><br>
-            <span style="font-size:12.5px; color:#475569;">${tr.place} (${tr.office})</span><br>
+            <span style="font-size:12.5px; color:#475569;">${tr.place} (${tr.office || 'PEA'})</span><br>
             <div style="margin:4px 0;">
-              <span style="font-size:11px; padding:2px 6px; border-radius:4px; background:${color}; color:#fff; font-weight:700;">
-                เสี่ยง${tr.initialRisk} (${tr.inspected ? 'ตรวจแล้ว' : 'รอตรวจ'})
-              </span>
+              ${statusHtml}
             </div>
+            ${detailsHtml}
             <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
               <a href="https://www.google.com/maps/dir/?api=1&destination=${tr.lat},${tr.lng}" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:4px; background:#4f46e5; color:#fff; padding:6px 10px; border-radius:6px; font-size:12px; text-decoration:none; font-weight:600;">
                 🧭 นำทาง Google Maps
               </a>
-              <button onclick="openInspectionForTR('${tr.trId}')" style="background:#10b981; color:#fff; border:none; padding:7px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; font-family:'Prompt',sans-serif;">
-                📝 บันทึกข้อมูลตรวจเช็ค
+              <button onclick="openInspectionForTR('${tr.trId}')" style="background:${tr.inspected ? '#059669' : '#10b981'}; color:#fff; border:none; padding:7px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; font-family:'Prompt',sans-serif;">
+                ${tr.inspected ? '✏️ ตรวจซ้ำ / แก้ไขผลตรวจ' : '📝 บันทึกข้อมูลตรวจเช็ค'}
               </button>
             </div>
           </div>
@@ -2235,18 +2334,21 @@
       const container = document.getElementById('mapSidebarList');
       if (!container) return;
       container.innerHTML = '';
-      targetTransformers.forEach(tr => {
+      targetTransformers.forEach((tr, i) => {
         const div = document.createElement('div');
         div.className = 'tr-target-item';
         div.onclick = () => {
           if (currentMap && tr.lat && tr.lng) currentMap.flyTo([tr.lat, tr.lng], 15);
         };
+        const statusBadge = tr.inspected
+          ? `<span style="font-size:11px; color:#10b981; font-weight:700; background:rgba(16,185,129,0.12); padding:2px 6px; border-radius:4px;">✓ ตรวจแล้ว</span>`
+          : `<span style="font-size:11px; color:#ef4444; font-weight:700; background:rgba(239,68,68,0.12); padding:2px 6px; border-radius:4px;">⏳ รอตรวจ</span>`;
         div.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong>${tr.trId}</strong>
-            <span style="font-size:11px; color:${tr.inspected ? '#10b981' : '#f59e0b'}; font-weight:700;">${tr.inspected ? '✓ ตรวจแล้ว' : 'รอตรวจ'}</span>
+            <strong>${i + 1}. [${tr.trId}]</strong>
+            ${statusBadge}
           </div>
-          <div style="font-size:12px; color:var(--text-muted);">${tr.place}</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">${tr.place} (${tr.office || 'PEA'})</div>
         `;
         container.appendChild(div);
       });
@@ -2255,6 +2357,12 @@
     // =========================================================================
     // MONITOR TAB: BEFORE VS AFTER COMPARISON
     // =========================================================================
+    function formatDec(val, decimals = 2) {
+      if (val === null || val === undefined || val === '') return '-';
+      const n = parseFloat(val);
+      return isNaN(n) ? val : n.toFixed(decimals);
+    }
+
     function renderMonitorTable() {
       const tbody = document.querySelector('#monitorComparisonTable tbody');
       if (!tbody) return;
@@ -2263,17 +2371,26 @@
       targetTransformers.forEach(tr => {
         const row = document.createElement('tr');
         const badgeColor = tr.initialRisk === 'สูง' ? '#ef4444' : '#f59e0b';
+
+        // Color badge for finalLevel (Column AF / ระดับหลังวัด)
+        const finalVal = tr.finalLevel || tr.initialRisk || 'รอตรวจ';
+        let finalColor = '#94a3b8'; // gray
+        if (finalVal.includes('สูง')) finalColor = '#ef4444'; // red
+        else if (finalVal.includes('กลาง')) finalColor = '#f59e0b'; // orange
+        else if (finalVal.includes('ต่ำ')) finalColor = '#10b981'; // green
+        const finalBadge = `<span style="padding:2px 8px; border-radius:4px; background:${finalColor}; color:#fff; font-size:11px; font-weight:700;">${finalVal}</span>`;
+
         row.innerHTML = `
           <td><strong>${tr.trId}</strong></td>
           <td style="font-family:'Sarabun',sans-serif;">${tr.place}</td>
           <td><span style="padding:2px 8px; border-radius:4px; background:${badgeColor}; color:#fff; font-size:11px; font-weight:700;">${tr.initialRisk || 'สูง'}</span></td>
-          <td>${tr.actualIa || '-'}</td>
-          <td>${tr.actualIb || '-'}</td>
-          <td>${tr.actualIc || '-'}</td>
-          <td>${tr.actualIn || '-'}</td>
-          <td>${tr.calcIn || '-'}</td>
-          <td style="color:#10b981; font-weight:600;">${tr.calculatedKw || tr.kw || '-'}</td>
-          <td><strong>${tr.finalLevel || tr.initialRisk}</strong></td>
+          <td>${formatDec(tr.actualIa)}</td>
+          <td>${formatDec(tr.actualIb)}</td>
+          <td>${formatDec(tr.actualIc)}</td>
+          <td>${formatDec(tr.actualIn)}</td>
+          <td>${formatDec(tr.calcIn)}</td>
+          <td style="color:#10b981; font-weight:600;">${formatDec(tr.calculatedKw || tr.kw)}</td>
+          <td>${finalBadge}</td>
           <td><span style="font-size:12px; color:${tr.inspected ? '#10b981' : '#f59e0b'}; font-weight:600;">${tr.inspected ? '✓ ตรวจแล้ว' : '⏳ รอตรวจ'}</span></td>
         `;
         tbody.appendChild(row);
@@ -2303,14 +2420,9 @@
           });
 
           // Dynamically update all counts and badges across desktop & mobile
-          const countStr = targetTransformers.length + ' ลูก';
           const countNum = targetTransformers.length.toString();
           document.querySelectorAll('.badge-count').forEach(el => el.innerText = countNum);
           document.querySelectorAll('.badge-pill').forEach(el => el.innerText = countNum);
-          const mobCount = document.getElementById('mobileTargetCount');
-          if (mobCount) mobCount.innerText = countStr;
-          const mapCount = document.getElementById('mapTargetCount');
-          if (mapCount) mapCount.innerText = countStr;
 
           populateTRSelect();
           renderMapMarkers();
