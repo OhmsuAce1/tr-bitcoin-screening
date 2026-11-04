@@ -468,14 +468,57 @@
       grid-template-columns: 1fr 340px;
       gap: 16px;
       width: 100%;
+      min-height: 560px;
     }
 
     #inspectionMap {
       width: 100%;
-      height: 560px;
+      min-height: 520px;
       border-radius: var(--radius-md);
       border: 1px solid var(--card-border);
       z-index: 10;
+      background: #e2e8f0;
+    }
+
+    body.dark-mode #inspectionMap {
+      background: #1e293b;
+    }
+
+    @keyframes gps-pulse {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .gps-marker-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .gps-pulse-outer {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.45);
+      position: absolute;
+      animation: gps-pulse 1.8s infinite ease-out;
+    }
+    .gps-pulse-core {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 6px rgba(37, 99, 235, 0.9);
+      position: relative;
+      z-index: 2;
+    }
+
+    .mobile-title, .mobile-badge {
+      display: none;
+    }
+    .desktop-title, .desktop-badge, .desktop-cloud-text {
+      display: inline;
     }
 
     .map-sidebar-list {
@@ -685,10 +728,49 @@
         box-sizing: border-box;
         overflow: hidden;
       }
+      .mobile-title, .mobile-badge {
+        display: inline !important;
+      }
+      .desktop-title, .desktop-badge, .desktop-cloud-text {
+        display: none !important;
+      }
       header {
-        padding: 8px 10px;
-        margin-bottom: 6px;
+        padding: 4px 6px !important;
+        margin-bottom: 4px !important;
+        min-height: 34px !important;
+        max-height: 36px !important;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px !important;
+      }
+      .header-title-row {
+        gap: 4px !important;
+        align-items: center;
+      }
+      .header-title-row h1 {
+        font-size: 13px !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        white-space: nowrap;
+      }
+      .badge-pea {
+        font-size: 9.5px !important;
+        padding: 1px 5px !important;
+      }
+      .header-actions {
+        gap: 4px !important;
+      }
+      #cloudStatusBadge {
+        padding: 3px 5px !important;
+        font-size: 10px !important;
+      }
+      .btn-icon {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 13px !important;
+        border-radius: 6px !important;
       }
       .card {
         padding: 10px;
@@ -719,7 +801,7 @@
       }
       #inspectionMap {
         height: 100% !important;
-        min-height: 0;
+        min-height: 280px !important;
         flex: 1;
         width: 100%;
         border-radius: var(--radius-sm);
@@ -776,16 +858,22 @@
     <header>
       <div class="header-left">
         <div class="header-title-row">
-          <h1>ระบบชี้เป้าหม้อแปลงเสี่ยงเหมืองบิตคอยน์</h1>
-          <span class="badge-pea">⚡ กบล.(น1) เชียงใหม่</span>
+          <h1 class="header-title">
+            <span class="desktop-title">ระบบชี้เป้าหม้อแปลงเสี่ยงเหมืองบิตคอยน์</span>
+            <span class="mobile-title">⚡ ชี้เป้าบิตคอยน์</span>
+          </h1>
+          <span class="badge-pea">
+            <span class="desktop-badge">⚡ กบล.(น1) เชียงใหม่</span>
+            <span class="mobile-badge">กบล.(น1)</span>
+          </span>
         </div>
       </div>
 
       <div class="header-actions">
         <!-- Cloud Sync Status Indicator -->
-        <div id="cloudStatusBadge" onclick="openGasUrlPrompt()" title="คลิกเพื่อตั้งค่า Web App URL เชื่อมต่อ Google Sheets" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 4px 10px; border-radius: 9999px; background: var(--card-bg); border: 1px solid var(--card-border); cursor:pointer;">
-          <span id="cloudDot" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></span>
-          <span id="cloudStatusText">โหมดออฟไลน์</span>
+        <div id="cloudStatusBadge" onclick="openGasUrlPrompt()" title="คลิกเพื่อตรวจสอบสถานะเชื่อมต่อ Google Sheets" style="display: flex; align-items: center; gap: 5px; font-size: 11.5px; padding: 3px 8px; border-radius: 9999px; background: var(--card-bg); border: 1px solid var(--card-border); cursor:pointer;">
+          <span id="cloudDot" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;"></span>
+          <span id="cloudStatusText" class="desktop-cloud-text">ออนไลน์</span>
         </div>
 
         <!-- Dark/Light Mode Toggle -->
@@ -834,10 +922,11 @@
             <span style="font-size:12px; font-weight:600; color:var(--text-muted);">
               📍 แตะหมุดเพื่อดูข้อมูล, นำทาง, และบันทึกผล
             </span>
-            <div style="display:flex; gap:4px;">
-              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('dark')">🌙 มืด</button>
+            <div style="display:flex; gap:4px; align-items:center;">
+              <button class="btn btn-sm btn-primary" style="min-height:30px; padding:3px 8px; font-size:11.5px;" onclick="locateUser()">📍 ตำแหน่งฉัน</button>
               <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('osm')">🗺️ ปกติ</button>
               <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('satellite')">🛰️ ดาวเทียม</button>
+              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('dark')">🌙 มืด</button>
             </div>
           </div>
           <div id="inspectionMap" style="flex:1;"></div>
@@ -882,17 +971,21 @@
           <div class="card-title">
             <span>⚡ ขั้นตอนที่ 1: ตรวจวัดกระแสที่ตู้หม้อแปลง (Feeder Measurements)</span>
           </div>
-          <button class="btn btn-sm btn-primary" onclick="addNewFeeder()">
-            + เพิ่มฟีดเดอร์
-          </button>
         </div>
 
         <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">
-          กดปุ่ม <strong>"+ เพิ่มฟีดเดอร์"</strong> เพื่อเพิ่มตู้ฟีดเดอร์ตามจริง (1-4 ฟีดเดอร์) พร้อมเลือก Dropdown ระบุฟีดเดอร์ และกรอกกระแสด้วยแป้นตัวเลข:
+          กดปุ่ม <strong>"+ เพิ่มฟีดเดอร์"</strong> ด้านล่างเพื่อเพิ่มตู้ฟีดเดอร์ตามจริง (1-4 ฟีดเดอร์) พร้อมเลือก Dropdown ระบุฟีดเดอร์ และกรอกกระแสด้วยแป้นตัวเลข:
         </p>
 
         <!-- Dynamic Feeders Grid -->
         <div id="dynamicFeederContainer" class="feeder-dynamic-grid"></div>
+
+        <!-- Add Feeder Button placed below latest feeder card -->
+        <div style="margin-top:12px; text-align:center;">
+          <button class="btn btn-sm btn-primary" onclick="addNewFeeder()" style="width:100%; max-width:280px; padding:9px 16px; font-weight:600;">
+            ➕ เพิ่มฟีดเดอร์
+          </button>
+        </div>
 
         <!-- Total Sum Display (Fluid Grid) -->
         <div style="margin-top:16px; padding:12px; background:var(--subcard-bg); border-radius:var(--radius-sm); border:1px solid var(--card-border);">
@@ -933,9 +1026,6 @@
           <div class="card-title">
             <span>🚶‍♂️ ขั้นตอนที่ 2: บันทึกการเดินไล่วัดตาม Line (Pole-by-Pole Tracing)</span>
           </div>
-          <button class="btn btn-sm btn-primary" onclick="addLineTracePoint()">
-            + เพิ่มจุดวัดตามเสา
-          </button>
         </div>
 
         <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">
@@ -944,6 +1034,13 @@
 
         <!-- Mobile-friendly Stacked Cards -->
         <div id="lineTraceCardContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+
+        <!-- Add Pole Button placed below latest pole card -->
+        <div style="margin-top:14px; text-align:center;">
+          <button class="btn btn-sm btn-primary" onclick="addLineTracePoint()" style="width:100%; max-width:320px; padding:10px 16px; font-weight:600;">
+            ➕ เพิ่มจุดวัดตามเสา
+          </button>
+        </div>
       </div>
 
       <!-- STEP 3: CONCLUSION & SINGLE SUBMIT BUTTON -->
@@ -983,25 +1080,59 @@
             </div>
           </div>
 
-          <!-- Right Column: Photos -->
+          <!-- Right Column: Photos (Camera + Gallery + Live Preview) -->
           <div>
             <label class="form-label">ถ่ายรูปหลักฐานหน้างาน (บันทึกลง Google Drive อัตโนมัติ):</label>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
               
-              <!-- Transformer Photo -->
-              <div style="background:var(--subcard-bg); padding:12px; border-radius:10px; border:1px solid var(--card-border); text-align:center;">
-                <div style="font-size:12px; font-weight:600; margin-bottom:8px;">⚡ รูปหม้อแปลง/ตู้</div>
-                <input type="file" id="inputPhotoTR" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event, 'transformer')">
-                <button class="btn btn-sm btn-outline" style="width:100%;" onclick="document.getElementById('inputPhotoTR').click()">📸 ถ่ายภาพ</button>
-                <div id="previewTR" style="margin-top:6px; font-size:11.5px; color:var(--text-muted);">ยังไม่มีรูป</div>
+              <!-- Transformer Photo Card -->
+              <div style="background:var(--subcard-bg); padding:10px; border-radius:10px; border:1px solid var(--card-border); text-align:center; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                  <div style="font-size:12px; font-weight:600; margin-bottom:6px;">⚡ รูปหม้อแปลง/ตู้</div>
+                  <!-- Hidden Inputs -->
+                  <input type="file" id="inputCameraTR" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event, 'transformer')">
+                  <input type="file" id="inputGalleryTR" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event, 'transformer')">
+                  
+                  <!-- Choice Buttons -->
+                  <div style="display:flex; gap:4px; margin-bottom:6px;">
+                    <button type="button" class="btn btn-sm btn-outline" style="flex:1; padding:5px 2px; font-size:11px;" onclick="document.getElementById('inputCameraTR').click()">📸 กล้อง</button>
+                    <button type="button" class="btn btn-sm btn-outline" style="flex:1; padding:5px 2px; font-size:11px;" onclick="document.getElementById('inputGalleryTR').click()">🖼️ คลังภาพ</button>
+                  </div>
+                </div>
+
+                <!-- Preview Area -->
+                <div>
+                  <div id="previewContainerTR" style="display:none;">
+                    <img id="imgPreviewTR" src="" alt="พรีวิวหม้อแปลง" style="width:100%; max-height:130px; object-fit:cover; border-radius:6px; border:1px solid var(--card-border); display:block; margin:0 auto 6px;">
+                    <button type="button" class="btn btn-sm btn-outline" style="width:100%; font-size:11px; padding:3px 4px; color:#ef4444; border-color:rgba(239,68,68,0.3);" onclick="removePhoto('transformer')">🗑️ ลบ/เปลี่ยนภาพ</button>
+                  </div>
+                  <div id="emptyPreviewTR" style="font-size:11px; color:var(--text-muted); padding:8px 0;">ยังไม่มีรูป</div>
+                </div>
               </div>
 
-              <!-- Building Photo -->
-              <div style="background:var(--subcard-bg); padding:12px; border-radius:10px; border:1px solid var(--card-border); text-align:center;">
-                <div style="font-size:12px; font-weight:600; margin-bottom:8px;">🏢 รูปอาคารละเมิด</div>
-                <input type="file" id="inputPhotoLoc" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event, 'location')">
-                <button class="btn btn-sm btn-outline" style="width:100%;" onclick="document.getElementById('inputPhotoLoc').click()">📸 ถ่ายภาพ</button>
-                <div id="previewLoc" style="margin-top:6px; font-size:11.5px; color:var(--text-muted);">ยังไม่มีรูป</div>
+              <!-- Building Photo Card -->
+              <div style="background:var(--subcard-bg); padding:10px; border-radius:10px; border:1px solid var(--card-border); text-align:center; display:flex; flex-direction:column; justify-content:space-between;">
+                <div>
+                  <div style="font-size:12px; font-weight:600; margin-bottom:6px;">🏢 รูปอาคารละเมิด</div>
+                  <!-- Hidden Inputs -->
+                  <input type="file" id="inputCameraLoc" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event, 'location')">
+                  <input type="file" id="inputGalleryLoc" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event, 'location')">
+                  
+                  <!-- Choice Buttons -->
+                  <div style="display:flex; gap:4px; margin-bottom:6px;">
+                    <button type="button" class="btn btn-sm btn-outline" style="flex:1; padding:5px 2px; font-size:11px;" onclick="document.getElementById('inputCameraLoc').click()">📸 กล้อง</button>
+                    <button type="button" class="btn btn-sm btn-outline" style="flex:1; padding:5px 2px; font-size:11px;" onclick="document.getElementById('inputGalleryLoc').click()">🖼️ คลังภาพ</button>
+                  </div>
+                </div>
+
+                <!-- Preview Area -->
+                <div>
+                  <div id="previewContainerLoc" style="display:none;">
+                    <img id="imgPreviewLoc" src="" alt="พรีวิวอาคารละเมิด" style="width:100%; max-height:130px; object-fit:cover; border-radius:6px; border:1px solid var(--card-border); display:block; margin:0 auto 6px;">
+                    <button type="button" class="btn btn-sm btn-outline" style="width:100%; font-size:11px; padding:3px 4px; color:#ef4444; border-color:rgba(239,68,68,0.3);" onclick="removePhoto('location')">🗑️ ลบ/เปลี่ยนภาพ</button>
+                  </div>
+                  <div id="emptyPreviewLoc" style="font-size:11px; color:var(--text-muted); padding:8px 0;">ยังไม่มีรูป</div>
+                </div>
               </div>
 
             </div>
@@ -1022,25 +1153,6 @@
     <!-- TAB 3: TRANSFORMERS TO INSPECT (MONITOR BEFORE VS AFTER) -->
     <!-- ================================================================= -->
     <div id="tab-monitor" class="tab-content" style="display:none;">
-      <!-- Google Apps Script Online Settings Card -->
-      <div class="card" style="margin-bottom: 14px;">
-        <div class="card-header">
-          <div class="card-title" style="font-size:1.05rem;">
-            <span>⚙️ ตั้งค่าการเชื่อมต่อ Google Sheets ออนไลน์ (Web App URL)</span>
-          </div>
-          <span style="font-size:11px; color:var(--text-muted);">Sheet ID: 1MAl3n2rz...</span>
-        </div>
-        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">
-          นำ <strong>Web App URL</strong> ที่ได้จากการ Deploy ใน Google Apps Script (ลงท้ายด้วย <code>/exec</code>) มาใส่ เพื่อเปิดใช้งานระบบซิงค์ข้อมูลและบันทึกผลภาคสนามแบบออนไลน์:
-        </p>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-          <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1; min-width:240px; min-height:38px; font-size:13px; padding:6px 10px;">
-          <button class="btn btn-primary btn-sm" onclick="saveGasUrlFromInput()">💾 บันทึกการเชื่อมต่อ</button>
-          <button class="btn btn-outline btn-sm" onclick="testGasConnection()">🧪 ทดสอบเชื่อมต่อ</button>
-        </div>
-        <div id="gasConnStatusMsg" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
-      </div>
-
       <div class="card">
         <div class="card-header">
           <div class="card-title">
@@ -1730,18 +1842,47 @@
     }
 
     // =========================================================================
-    // STEP 3: SUBMIT TO GOOGLE SHEET (ONLY ONE BUTTON)
+    // STEP 3: SUBMIT TO GOOGLE SHEET (ONLY ONE BUTTON) & PHOTO PREVIEWS
     // =========================================================================
     async function handlePhotoUpload(e, type) {
-      const file = e.target.files[0];
+      const file = e.target.files && e.target.files[0];
       if (!file) return;
       try {
         const dataUrl = await compressImage(file, 1280, 0.8);
         inspectionPhotos[type] = dataUrl;
-        document.getElementById(type === 'transformer' ? 'previewTR' : 'previewLoc').innerHTML = '✅ ถ่ายรูปแล้ว';
-        document.getElementById(type === 'transformer' ? 'previewTR' : 'previewLoc').style.color = '#10b981';
+        renderPhotoPreview(type);
       } catch (err) {
-        alert('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+        console.error('Photo error:', err);
+        alert('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ: ' + (err.message || err));
+      }
+    }
+
+    function removePhoto(type) {
+      inspectionPhotos[type] = null;
+      const camId = type === 'transformer' ? 'inputCameraTR' : 'inputCameraLoc';
+      const galId = type === 'transformer' ? 'inputGalleryTR' : 'inputGalleryLoc';
+      const camEl = document.getElementById(camId);
+      const galEl = document.getElementById(galId);
+      if (camEl) camEl.value = '';
+      if (galEl) galEl.value = '';
+      renderPhotoPreview(type);
+    }
+
+    function renderPhotoPreview(type) {
+      const isTR = type === 'transformer';
+      const imgEl = document.getElementById(isTR ? 'imgPreviewTR' : 'imgPreviewLoc');
+      const containerEl = document.getElementById(isTR ? 'previewContainerTR' : 'previewContainerLoc');
+      const emptyEl = document.getElementById(isTR ? 'emptyPreviewTR' : 'emptyPreviewLoc');
+      const data = inspectionPhotos[type];
+
+      if (data) {
+        if (imgEl) imgEl.src = data;
+        if (containerEl) containerEl.style.display = 'block';
+        if (emptyEl) emptyEl.style.display = 'none';
+      } else {
+        if (imgEl) imgEl.src = '';
+        if (containerEl) containerEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'block';
       }
     }
 
@@ -1860,7 +2001,10 @@
       });
 
       if (targetTransformers.length > 0) {
-        selectInspectionTR(targetTransformers[0].trId);
+        const trToSelect = currentSelectedTR && targetTransformers.some(t => t.trId === currentSelectedTR.trId)
+          ? currentSelectedTR.trId
+          : targetTransformers[0].trId;
+        selectInspectionTR(trToSelect);
       }
     }
 
@@ -1904,6 +2048,11 @@
       initDefaultFeeders();
       lineTracePoints = [];
       renderLineTraceCards();
+
+      // Reset evidence photos and previews
+      inspectionPhotos = { transformer: null, location: null };
+      renderPhotoPreview('transformer');
+      renderPhotoPreview('location');
     }
 
     function openInspectionForTR(trId) {
@@ -1921,15 +2070,20 @@
     }
 
     // =========================================================================
-    // MAP & POPUP WITH "บันทึกข้อมูล" BUTTON
+    // MAP & POPUP WITH "บันทึกข้อมูล" BUTTON & GPS LOCATION
     // =========================================================================
+    let userLocationMarker = null;
+    let userAccuracyCircle = null;
+
     function initMap() {
       currentMap = L.map('inspectionMap').setView([18.7883, 98.9853], 8);
-      activeTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 18, attribution: '&copy; OpenStreetMap'
+      activeTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
       }).addTo(currentMap);
       renderMapMarkers();
       renderSidebarList();
+      setTimeout(() => { if (currentMap) currentMap.invalidateSize(); }, 150);
+      setTimeout(() => { if (currentMap) currentMap.invalidateSize(); }, 400);
     }
 
     function setMapLayer(type) {
@@ -1937,8 +2091,106 @@
       if (activeTileLayer) currentMap.removeLayer(activeTileLayer);
       const url = type === 'satellite' 
         ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : (type === 'osm' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-      activeTileLayer = L.tileLayer(url, { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(currentMap);
+        : (type === 'dark' ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+      activeTileLayer = L.tileLayer(url, { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(currentMap);
+    }
+
+    function fitMapToMarkers() {
+      if (!currentMap || !mapMarkers.length) return;
+      try {
+        const group = new L.featureGroup(mapMarkers);
+        currentMap.fitBounds(group.getBounds().pad(0.08));
+      } catch (e) {
+        console.warn('fitBounds error:', e);
+      }
+    }
+
+    function locateUser() {
+      if (!navigator.geolocation) {
+        alert('อุปกรณ์ของคุณไม่รองรับการระบุตำแหน่ง GPS');
+        return;
+      }
+      if (!currentMap) return;
+
+      const btn = event && event.target ? event.target : null;
+      const originalText = btn ? btn.innerText : '';
+      if (btn) btn.innerText = '⏳ ค้นหา...';
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (btn) btn.innerText = originalText;
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const acc = Math.round(pos.coords.accuracy || 0);
+
+          if (userLocationMarker) currentMap.removeLayer(userLocationMarker);
+          if (userAccuracyCircle) currentMap.removeLayer(userAccuracyCircle);
+
+          const pulseIcon = L.divIcon({
+            className: 'gps-marker-wrap',
+            html: `<div class="gps-pulse-outer"></div><div class="gps-pulse-core"></div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+
+          userLocationMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(currentMap);
+          userAccuracyCircle = L.circle([lat, lng], {
+            radius: acc,
+            color: '#3b82f6',
+            fillColor: '#60a5fa',
+            fillOpacity: 0.15,
+            weight: 1
+          }).addTo(currentMap);
+
+          // Calculate nearest target transformer
+          let nearestTR = null;
+          let minDistance = Infinity;
+          targetTransformers.forEach(tr => {
+            if (tr.lat && tr.lng) {
+              const d = getDistanceFromLatLonInMeters(lat, lng, tr.lat, tr.lng);
+              if (d < minDistance) {
+                minDistance = d;
+                nearestTR = tr;
+              }
+            }
+          });
+
+          let infoText = `📍 <strong>ตำแหน่งของคุณ</strong> (ความคลาดเคลื่อน ~${acc} ม.)`;
+          if (nearestTR) {
+            const distStr = minDistance < 1000 ? `${Math.round(minDistance)} ม.` : `${(minDistance / 1000).toFixed(2)} กม.`;
+            infoText += `<br>🎯 ใกล้หม้อแปลง <strong>${nearestTR.trId}</strong> (${nearestTR.place}) ที่สุด: <strong>${distStr}</strong>`;
+          }
+
+          userLocationMarker.bindPopup(`
+            <div style="font-family:'Sarabun',sans-serif; font-size:12.5px; line-height:1.4;">
+              ${infoText}
+            </div>
+          `).openPopup();
+
+          currentMap.setView([lat, lng], 16);
+        },
+        (err) => {
+          if (btn) btn.innerText = originalText;
+          let msg = 'ไม่สามารถดึงตำแหน่งพิกัดได้: ' + err.message;
+          if (err.code === 1) msg = 'กรุณาอนุญาตให้เบราว์เซอร์เข้าถึงตำแหน่ง (GPS Permission)';
+          alert(msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Earth radius in metres
+      const φ1 = lat1 * Math.PI / 180;
+      const φ2 = lat2 * Math.PI / 180;
+      const Δφ = (lat2 - lat1) * Math.PI / 180;
+      const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
     }
 
     function renderMapMarkers() {
@@ -2028,38 +2280,49 @@
       });
     }
 
-    async function syncOnlineNow() {
+    async function syncOnlineNow(silent = false) {
       const gasUrl = getGasUrl();
       if (!gasUrl) {
-        alert('กรุณาระบุ Web App URL ก่อนดึงข้อมูล (คลิกที่ปุ่มสถานะคลาวด์ หรือระบุในการ์ดตั้งค่า)');
+        if (!silent) alert('กรุณาระบุ Web App URL ก่อนดึงข้อมูล (คลิกที่ปุ่มสถานะคลาวด์)');
         return;
       }
       try {
         const res = await fetch(gasUrl + '?action=get_targets');
         const json = await res.json();
-        if (json.success && json.transformers) {
-          json.transformers.forEach(item => {
-            const match = targetTransformers.find(t => t.trId === item.trId);
-            if (match) {
-              match.inspected = item.inspected;
-              match.actualIa = item.actualIa;
-              match.actualIb = item.actualIb;
-              match.actualIc = item.actualIc;
-              match.actualIn = item.actualIn;
-              match.calcIn = item.calcIn;
-              match.calculatedKw = item.calculatedKw;
-              match.finalLevel = item.finalLevel;
-              match.remarks = item.remarks;
-            }
+        if (json.success && json.transformers && json.transformers.length > 0) {
+          // Merge with local inspection overrides if any exist in localStorage
+          let localOverrides = {};
+          try {
+            const stored = localStorage.getItem('tr_inspection_status');
+            if (stored) localOverrides = JSON.parse(stored);
+          } catch (e) {}
+
+          targetTransformers = json.transformers.map(item => {
+            const local = localOverrides[item.trId];
+            return local ? { ...item, ...local, inspected: true } : item;
           });
+
+          // Dynamically update all counts and badges across desktop & mobile
+          const countStr = targetTransformers.length + ' ลูก';
+          const countNum = targetTransformers.length.toString();
+          document.querySelectorAll('.badge-count').forEach(el => el.innerText = countNum);
+          document.querySelectorAll('.badge-pill').forEach(el => el.innerText = countNum);
+          const mobCount = document.getElementById('mobileTargetCount');
+          if (mobCount) mobCount.innerText = countStr;
+          const mapCount = document.getElementById('mapTargetCount');
+          if (mapCount) mapCount.innerText = countStr;
+
+          populateTRSelect();
           renderMapMarkers();
           renderSidebarList();
           renderMonitorTable();
           updateCloudStatus();
-          alert('🎉 ซิงค์ข้อมูลล่าสุดจาก Google Sheets สำเร็จ!');
+          fitMapToMarkers();
+          if (!silent) alert(`🎉 ซิงค์ข้อมูลล่าสุด ${targetTransformers.length} ลูกจาก Google Sheets สำเร็จ!`);
         }
       } catch (err) {
-        alert('เชื่อมต่อขัดข้อง: ' + err.message);
+        console.warn('Sync failed:', err);
+        if (!silent) alert('เชื่อมต่อขัดข้อง: ' + err.message);
       }
     }
 
@@ -2080,6 +2343,8 @@
       initDefaultFeeders();
       renderMonitorTable();
       switchTab('map');
+      // Auto-sync real targets from Google Sheets in background
+      syncOnlineNow(true);
     });
   </script>
   <!-- BOTTOM NAVIGATION BAR (FOR MOBILE & IPAD <= 1024px) -->
