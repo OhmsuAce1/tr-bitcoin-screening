@@ -462,6 +462,44 @@
       font-weight: 700;
     }
 
+    /* Transformer kVA Rating Box & Chips */
+    .kva-rating-box {
+      background: var(--subcard-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      box-sizing: border-box;
+    }
+    .kva-chip {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-soft);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: 'Prompt', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto !important;
+      box-sizing: border-box;
+    }
+    .kva-chip:hover {
+      border-color: var(--primary-light);
+      color: var(--primary-light);
+    }
+    .kva-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    }
+
     /* Map Layout */
     .map-container-layout {
       display: grid;
@@ -843,6 +881,7 @@
       .btn-sm,
       .btn-inline,
       .btn-auto,
+      .kva-chip,
       .map-control-btn,
       .pole-gps-btn,
       [id^="pole_gps_btn_"] {
@@ -1018,6 +1057,36 @@
         <div class="card-header">
           <div class="card-title">
             <span>⚡ ขั้นตอนที่ 1: ตรวจวัดกระแสที่ตู้หม้อแปลง (Feeder Measurements)</span>
+          </div>
+        </div>
+
+        <!-- Transformer kVA Rating Box -->
+        <div class="kva-rating-box" style="background:var(--subcard-bg); border:1px solid var(--card-border); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; box-sizing:border-box;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <label for="actualKvaInput" style="font-size:13px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:6px;">
+                <span>🏷️ ขนาดพิกัดหม้อแปลง (kVA):</span>
+                <span style="font-size:11px; color:#ef4444; font-weight:600;">*บันทึกเข้า Col I</span>
+              </label>
+              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                ตรวจสอบจากเนมเพลท (Nameplate) ตัวถังหม้อแปลงจริงหน้างาน
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="actualKvaInput" class="num-input" placeholder="เช่น 100" oninput="sanitizeNumeric(this); updateKvaChips(this.value)" style="width:110px; min-height:38px; font-size:15px; font-weight:700; text-align:center; color:var(--primary-light);">
+              <span style="font-size:13px; font-weight:700; color:var(--text-soft);">kVA</span>
+            </div>
+          </div>
+          <!-- Quick Select Chips for PEA standard sizes -->
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px dashed var(--card-border);">
+            <span style="font-size:11px; color:var(--text-muted); font-weight:600;">ขนาดมาตรฐาน PEA:</span>
+            <button type="button" class="kva-chip" data-kva="50" onclick="setKvaValue(50)">50</button>
+            <button type="button" class="kva-chip" data-kva="100" onclick="setKvaValue(100)">100</button>
+            <button type="button" class="kva-chip" data-kva="160" onclick="setKvaValue(160)">160</button>
+            <button type="button" class="kva-chip" data-kva="250" onclick="setKvaValue(250)">250</button>
+            <button type="button" class="kva-chip" data-kva="315" onclick="setKvaValue(315)">315</button>
+            <button type="button" class="kva-chip" data-kva="400" onclick="setKvaValue(400)">400</button>
+            <button type="button" class="kva-chip" data-kva="500" onclick="setKvaValue(500)">500</button>
           </div>
         </div>
 
@@ -1226,6 +1295,7 @@
                 <th>เลขหม้อแปลง</th>
                 <th>สถานที่</th>
                 <th>ความเสี่ยงเดิม (Col G)</th>
+                <th>kVA จริง (Col I)</th>
                 <th>Ia รวม</th>
                 <th>Ib รวม</th>
                 <th>Ic รวม</th>
@@ -2091,9 +2161,12 @@
       const building = document.getElementById('violatingBuildingInput').value.trim();
       const inspectorId = document.getElementById('inspectorIdInput').value.trim();
       const remarks = document.getElementById('remarksInput').value.trim();
+      const kvaInputVal = document.getElementById('actualKvaInput') ? document.getElementById('actualKvaInput').value.trim() : '';
+      const kvaNum = kvaInputVal !== '' ? (parseFloat(kvaInputVal) || kvaInputVal) : (currentSelectedTR.actualKva || '');
 
       // Update local object
       currentSelectedTR.inspected = true;
+      currentSelectedTR.actualKva = kvaNum;
       currentSelectedTR.actualIa = sumIa;
       currentSelectedTR.actualIb = sumIb;
       currentSelectedTR.actualIc = sumIc;
@@ -2107,6 +2180,7 @@
       const localOverrides = JSON.parse(localStorage.getItem('tr_inspection_status') || '{}');
       localOverrides[currentSelectedTR.trId] = {
         inspected: true,
+        actualKva: kvaNum,
         actualIa: sumIa, actualIb: sumIb, actualIc: sumIc, actualIn: sumIn,
         violationStatus: status, violationBuilding: building,
         inspector: inspectorId, remarks: remarks, lineTracing: lineTracePoints
@@ -2130,7 +2204,7 @@
 
       const payload = {
         trId: currentSelectedTR.trId,
-        actualKva: currentSelectedTR.actualKva || currentSelectedTR.kva || 100,
+        actualKva: kvaNum,
         actualIa: sumIa,
         actualIb: sumIb,
         actualIc: sumIc,
@@ -2243,6 +2317,32 @@
       }
     }
 
+    function setKvaValue(val) {
+      const input = document.getElementById('actualKvaInput');
+      if (input) {
+        input.value = val;
+        updateKvaChips(val);
+      }
+      if (currentSelectedTR) {
+        currentSelectedTR.actualKva = val;
+      }
+    }
+
+    function updateKvaChips(val) {
+      const numVal = parseFloat(val);
+      document.querySelectorAll('.kva-chip').forEach(chip => {
+        const chipVal = parseFloat(chip.getAttribute('data-kva'));
+        if (numVal && chipVal === numVal) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+      if (currentSelectedTR) {
+        currentSelectedTR.actualKva = val !== '' ? (numVal || val) : '';
+      }
+    }
+
     function selectInspectionTR(trId) {
       currentSelectedTR = targetTransformers.find(t => t.trId === trId);
       if (!currentSelectedTR) return;
@@ -2253,6 +2353,16 @@
       const mobileSelect = document.getElementById('mobileMapTRSelect');
       if (mobileSelect && mobileSelect.value !== trId) mobileSelect.value = trId;
 
+      // Populate actualKva input & update active chips
+      const kvaInput = document.getElementById('actualKvaInput');
+      const curKva = currentSelectedTR.actualKva !== undefined && currentSelectedTR.actualKva !== null && currentSelectedTR.actualKva !== ''
+        ? currentSelectedTR.actualKva
+        : (currentSelectedTR.kva || '');
+      if (kvaInput) {
+        kvaInput.value = curKva;
+        updateKvaChips(curKva);
+      }
+
       const statusBadge = currentSelectedTR.inspected
         ? `<span style="color:#10b981; font-weight:700;">🟢 ตรวจแล้ว</span> (ระดับหลังวัด: <strong>${currentSelectedTR.finalLevel || currentSelectedTR.initialRisk}</strong>)`
         : `<span style="color:#ef4444; font-weight:700;">⏳ รอตรวจ</span> (ความเสี่ยงเดิม: <strong>${currentSelectedTR.initialRisk || 'สูง'}</strong>)`;
@@ -2260,6 +2370,7 @@
       document.getElementById('targetTrSummary').innerHTML = `
         📍 สถานที่: <strong>${currentSelectedTR.place}</strong> (${currentSelectedTR.office || '-'}) | 
         สถานะ: ${statusBadge} | 
+        ขนาด: <strong>${curKva ? curKva + ' kVA' : '-'}</strong> | 
         kW: <strong>${formatDec(currentSelectedTR.calculatedKw || currentSelectedTR.kw)}</strong> kW
       `;
 
@@ -2432,6 +2543,7 @@
 
         const detailsHtml = tr.inspected
           ? `<div style="font-size:11.5px; color:var(--text-soft); margin:6px 0; background:rgba(16,185,129,0.08); padding:6px; border-radius:4px; border:1px solid rgba(16,185,129,0.2);">
+               ${tr.actualKva ? `ขนาดพิกัด: <strong>${tr.actualKva} kVA</strong><br>` : ''}
                Ia=${formatDec(tr.actualIa)}, Ib=${formatDec(tr.actualIb)}, Ic=${formatDec(tr.actualIc)}, In=${formatDec(tr.actualIn)} A<br>
                Inc=${formatDec(tr.calcIn)} A | kW=${formatDec(tr.calculatedKw)} kW
              </div>`
@@ -2514,6 +2626,7 @@
           <td><strong>${tr.trId}</strong></td>
           <td style="font-family:'Sarabun',sans-serif;">${tr.place}</td>
           <td><span style="padding:2px 8px; border-radius:4px; background:${badgeColor}; color:#fff; font-size:11px; font-weight:700;">${tr.initialRisk || 'สูง'}</span></td>
+          <td><strong>${tr.actualKva ? tr.actualKva + ' kVA' : '-'}</strong></td>
           <td>${formatDec(tr.actualIa)}</td>
           <td>${formatDec(tr.actualIb)}</td>
           <td>${formatDec(tr.actualIc)}</td>
