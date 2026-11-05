@@ -1615,7 +1615,10 @@
       lineTracePoints.push({
         id: Date.now(),
         feeder: feeder,
-        poleName: `เสาต้นที่ ${idx}`,
+        poleName: '',
+        lat: null,
+        lng: null,
+        gpsAccuracy: null,
         ia: '', ib: '', ic: '', inVal: '',
         note: ''
       });
@@ -1665,7 +1668,23 @@
           </div>
 
           <div style="margin-top:8px;">
-            <input type="text" value="${p.poleName}" onchange="updateTraceData(${p.id}, 'poleName', this.value)" placeholder="ชื่อเสา / พิกัดสังเกต เช่น เสาปากซอย 3, หน้าตึกแถว 45/2" style="width:100%; min-height:36px; font-size:13px; padding:6px 10px;">
+            <label style="font-size:11px; font-weight:600; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span>📍 พิกัด GPS / ชื่อเสา:</span>
+              <span id="pole_acc_${p.id}" style="font-size:10.5px; color:#10b981; font-weight:600; display:${p.lat ? 'inline' : 'none'};">
+                ✓ ดึงพิกัดแล้ว (~${p.gpsAccuracy || 0} ม.)
+              </span>
+            </label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <input type="text" id="pole_input_${p.id}" value="${p.poleName || ''}" onchange="updateTraceData(${p.id}, 'poleName', this.value)" placeholder="กดปุ่ม '📍 ดึง GPS' ณ เสานี้ หรือระบุชื่อเสา" style="flex:1; min-height:38px; font-size:13px; padding:6px 10px;">
+              <button type="button" class="btn btn-sm btn-outline" id="pole_gps_btn_${p.id}" onclick="getTracePointGPS(${p.id}, ${i + 1})" style="min-height:38px; padding:6px 12px; font-size:12px; font-weight:600; white-space:nowrap; display:flex; align-items:center; gap:4px; border-color:var(--primary); color:var(--primary); flex-shrink:0;">
+                ${p.lat ? '📍 อัปเดต GPS' : '📍 ดึง GPS'}
+              </button>
+            </div>
+            <div id="pole_gps_info_${p.id}" style="font-size:11px; margin-top:4px; display:${p.lat ? 'block' : 'none'};">
+              <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" style="color:var(--primary); text-decoration:underline;">
+                🗺️ เปิดดูพิกัด ${p.lat}, ${p.lng} บน Google Maps
+              </a>
+            </div>
           </div>
 
           <div class="trace-current-grid" style="margin-top:8px;">
@@ -1697,6 +1716,66 @@
         `;
         container.appendChild(card);
       });
+    }
+
+    function getTracePointGPS(id, index) {
+      if (!navigator.geolocation) {
+        alert('อุปกรณ์ของคุณไม่รองรับการระบุตำแหน่ง GPS');
+        return;
+      }
+
+      const btn = document.getElementById(`pole_gps_btn_${id}`);
+      const inputEl = document.getElementById(`pole_input_${id}`);
+      const accEl = document.getElementById(`pole_acc_${id}`);
+      const infoEl = document.getElementById(`pole_gps_info_${id}`);
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ ดึงพิกัด...';
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lng = pos.coords.longitude.toFixed(6);
+          const acc = Math.round(pos.coords.accuracy || 0);
+          const gpsStr = `${lat}, ${lng}`;
+
+          const p = lineTracePoints.find(item => item.id === id);
+          if (p) {
+            p.poleName = gpsStr;
+            p.lat = parseFloat(lat);
+            p.lng = parseFloat(lng);
+            p.gpsAccuracy = acc;
+            p.locationDetail = gpsStr;
+          }
+
+          if (inputEl) inputEl.value = gpsStr;
+          if (accEl) {
+            accEl.style.display = 'inline';
+            accEl.innerText = `✓ ดึงพิกัดแล้ว (~${acc} ม.)`;
+          }
+          if (infoEl) {
+            infoEl.style.display = 'block';
+            infoEl.innerHTML = `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="color:var(--primary); text-decoration:underline;">🗺️ เปิดดูพิกัด ${gpsStr} บน Google Maps</a>`;
+          }
+
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '📍 อัปเดต GPS';
+          }
+        },
+        (err) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '📍 ดึง GPS';
+          }
+          let msg = 'ไม่สามารถดึงตำแหน่ง GPS ได้: ' + err.message;
+          if (err.code === 1) msg = 'กรุณาอนุญาตให้เบราว์เซอร์เข้าถึงตำแหน่ง (GPS Permission) ในการตั้งค่า';
+          alert(msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
     }
 
     function updateTraceData(id, field, value) {
@@ -2015,7 +2094,10 @@
         notes: (building ? `อาคาร: ${building} | ` : '') + (remarks ? `หมายเหตุ: ${remarks}` : ''),
         transformerPhotoBase64: inspectionPhotos.transformer,
         violationPhotoBase64: inspectionPhotos.location,
-        lineTracing: lineTracePoints
+        lineTracing: lineTracePoints.map((p, idx) => ({
+          ...p,
+          poleName: p.poleName && p.poleName.trim() ? p.poleName.trim() : `เสาต้นที่ ${idx + 1}`
+        }))
       };
 
       try {
