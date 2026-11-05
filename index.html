@@ -831,8 +831,54 @@
       .step3-grid {
         grid-template-columns: 1fr !important;
       }
+      .card, .container, input, select, textarea, .trace-card, .feeder-card {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
       .btn {
         width: 100%;
+        box-sizing: border-box;
+      }
+      /* ป้องกันปุ่มขนาดเล็ก ปุ่มใน flex row และปุ่มดึง GPS ไม่ให้ยืด 100% จนล้นจอบนมือถือ */
+      .btn-sm,
+      .btn-inline,
+      .btn-auto,
+      .map-control-btn,
+      .pole-gps-btn,
+      [id^="pole_gps_btn_"] {
+        width: auto !important;
+        max-width: 100% !important;
+      }
+      .pole-input-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .pole-input-row input {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box;
+      }
+      .pole-input-row .pole-gps-btn {
+        width: auto !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        box-sizing: border-box;
+      }
+      .map-controls-group {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        flex-wrap: wrap;
+        max-width: 100%;
+      }
+      .map-controls-group .btn {
+        width: auto !important;
+        flex: initial !important;
       }
       .tr-selector-row {
         flex-direction: column !important;
@@ -840,6 +886,8 @@
       }
       .tr-selector-row select {
         width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
       }
       .header-title-row h1 {
         font-size: 1.05rem;
@@ -922,11 +970,11 @@
             <span style="font-size:12px; font-weight:600; color:var(--text-muted);">
               📍 แตะหมุดเพื่อดูข้อมูล, นำทาง, และบันทึกผล
             </span>
-            <div style="display:flex; gap:4px; align-items:center;">
-              <button class="btn btn-sm btn-primary" style="min-height:30px; padding:3px 8px; font-size:11.5px;" onclick="locateUser()">📍 ตำแหน่งฉัน</button>
-              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('osm')">🗺️ ปกติ</button>
-              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('satellite')">🛰️ ดาวเทียม</button>
-              <button class="btn btn-sm btn-outline" style="min-height:30px; padding:3px 6px; font-size:11.5px;" onclick="setMapLayer('dark')">🌙 มืด</button>
+            <div class="map-controls-group" style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+              <button class="btn btn-sm btn-primary map-control-btn" style="min-height:30px; padding:3px 8px; font-size:11.5px; width:auto !important; flex-shrink:0;" onclick="locateUser()">📍 ตำแหน่งฉัน</button>
+              <button class="btn btn-sm btn-outline map-control-btn" style="min-height:30px; padding:3px 6px; font-size:11.5px; width:auto !important; flex-shrink:0;" onclick="setMapLayer('osm')">🗺️ ปกติ</button>
+              <button class="btn btn-sm btn-outline map-control-btn" style="min-height:30px; padding:3px 6px; font-size:11.5px; width:auto !important; flex-shrink:0;" onclick="setMapLayer('satellite')">🛰️ ดาวเทียม</button>
+              <button class="btn btn-sm btn-outline map-control-btn" style="min-height:30px; padding:3px 6px; font-size:11.5px; width:auto !important; flex-shrink:0;" onclick="setMapLayer('dark')">🌙 มืด</button>
             </div>
           </div>
           <div id="inspectionMap" style="flex:1;"></div>
@@ -953,12 +1001,12 @@
       
       <!-- Target Transformer Selector Card -->
       <div class="card">
-        <div class="tr-selector-row" style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; width:100%;">
-          <div style="flex:1; width:100%;">
+        <div class="tr-selector-row" style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; width:100%; box-sizing:border-box;">
+          <div style="flex:1; width:100%; min-width:0; box-sizing:border-box;">
             <label class="form-label" style="font-weight:600;">เลือกหม้อแปลงเป้าหมายที่กำลังตรวจ:</label>
-            <select id="inspectionTRSelect" onchange="selectInspectionTR(this.value)"></select>
+            <select id="inspectionTRSelect" onchange="selectInspectionTR(this.value)" style="width:100%; max-width:100%; box-sizing:border-box;"></select>
           </div>
-          <button class="btn btn-outline" onclick="openNavToCurrentTR()" style="flex-shrink:0;">
+          <button class="btn btn-outline" onclick="openNavToCurrentTR()" style="flex-shrink:0; box-sizing:border-box;">
             🧭 นำทาง Google Maps
           </button>
         </div>
@@ -1591,7 +1639,7 @@
               <strong style="color:#ef4444; font-size:13px;">🚨 ตรวจพบความผิดปกติเด่นชัดที่ ${worstFeeder} (กระแส In พุ่งสูง)</strong>
               <div style="font-size:11.5px; color:var(--text-soft);">แนะนำให้เริ่มเดินไล่วัดตาม Line จากฟีดเดอร์นี้</div>
             </div>
-            <button class="btn btn-sm btn-primary" onclick="setTraceFeederTarget('${worstFeeder}')">👉 เดินไล่สายฟีดเดอร์นี้</button>
+            <button class="btn btn-sm btn-primary" onclick="setTraceFeederTarget('${worstFeeder}')" style="width:auto; max-width:100%; box-sizing:border-box;">👉 เดินไล่สายฟีดเดอร์นี้</button>
           </div>
         `;
       } else {
@@ -1674,9 +1722,9 @@
                 ✓ ดึงพิกัดแล้ว (~${p.gpsAccuracy || 0} ม.)
               </span>
             </label>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <input type="text" id="pole_input_${p.id}" value="${p.poleName || ''}" onchange="updateTraceData(${p.id}, 'poleName', this.value)" placeholder="กดปุ่ม '📍 ดึง GPS' ณ เสานี้ หรือระบุชื่อเสา" style="flex:1; min-height:38px; font-size:13px; padding:6px 10px;">
-              <button type="button" class="btn btn-sm btn-outline" id="pole_gps_btn_${p.id}" onclick="getTracePointGPS(${p.id}, ${i + 1})" style="min-height:38px; padding:6px 12px; font-size:12px; font-weight:600; white-space:nowrap; display:flex; align-items:center; gap:4px; border-color:var(--primary); color:var(--primary); flex-shrink:0;">
+            <div class="pole-input-row" style="display:flex; gap:6px; align-items:center; width:100%; box-sizing:border-box;">
+              <input type="text" id="pole_input_${p.id}" value="${p.poleName || ''}" onchange="updateTraceData(${p.id}, 'poleName', this.value)" placeholder="พิกัด GPS หรือชื่อเสา" style="flex:1 1 0%; min-width:0; width:100%; min-height:38px; font-size:13px; padding:6px 10px; box-sizing:border-box;">
+              <button type="button" class="btn btn-sm btn-outline pole-gps-btn" id="pole_gps_btn_${p.id}" onclick="getTracePointGPS(${p.id}, ${i + 1})" style="width:auto !important; min-height:38px; padding:6px 10px; font-size:12px; font-weight:600; white-space:nowrap; display:flex; align-items:center; gap:4px; border-color:var(--primary); color:var(--primary); flex-shrink:0; box-sizing:border-box;">
                 ${p.lat ? '📍 อัปเดต GPS' : '📍 ดึง GPS'}
               </button>
             </div>
