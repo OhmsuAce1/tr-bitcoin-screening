@@ -2537,17 +2537,34 @@
         const res = await fetch(gasUrl + '?action=get_targets');
         const json = await res.json();
         if (json.success && json.transformers && json.transformers.length > 0) {
-          // Merge with local inspection overrides if any exist in localStorage
+          // Google Sheet is the Single Source of Truth:
+          // Synchronize and prune localStorage overrides so deleted or uninspected items in the sheet are cleared from cache!
           let localOverrides = {};
           try {
             const stored = localStorage.getItem('tr_inspection_status');
             if (stored) localOverrides = JSON.parse(stored);
           } catch (e) {}
 
-          targetTransformers = json.transformers.map(item => {
-            const local = localOverrides[item.trId];
-            return local ? { ...item, ...local, inspected: true } : item;
+          let hasOverridesChanged = false;
+          json.transformers.forEach(item => {
+            // If the sheet indicates this transformer is not inspected (inspected === false),
+            // remove any stale local cache for this transformer immediately!
+            if (!item.inspected && localOverrides[item.trId]) {
+              delete localOverrides[item.trId];
+              hasOverridesChanged = true;
+            }
           });
+          if (hasOverridesChanged) {
+            try {
+              localStorage.setItem('tr_inspection_status', JSON.stringify(localOverrides));
+            } catch (e) {}
+          }
+
+          // Authoritative data mapping from Google Sheet:
+          targetTransformers = json.transformers.map(item => ({
+            ...item,
+            kw: item.initialKw || item.kw
+          }));
 
           // Dynamically update all counts and badges across desktop & mobile
           const countNum = targetTransformers.length.toString();
