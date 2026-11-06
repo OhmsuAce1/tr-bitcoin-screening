@@ -23,6 +23,7 @@
 const SPREADSHEET_ID = '1MAl3n2rzX4U1foeEZeRyklbutylYb0X3CJO2pH0bzNE';
 const MAIN_SHEET_NAME = 'คะแนน';
 const TRACE_SHEET_NAME = 'บันทึกไล่สาย';
+const FEEDER_SHEET_NAME = 'บันทึกฟีดเดอร์';
 const FOLDER_NAME = 'ภาพตรวจหม้อแปลง_เหมืองบิตคอยน์';
 
 function getSpreadsheet() {
@@ -67,6 +68,32 @@ function getOrCreateTraceSheet(ss) {
   return sheet;
 }
 
+function getOrCreateFeederSheet(ss) {
+  let sheet = ss.getSheetByName(FEEDER_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(FEEDER_SHEET_NAME);
+    // สร้างหัวตารางบันทึกฟีดเดอร์
+    const headers = [
+      'วันเวลาบันทึก',
+      'เลขหม้อแปลง',
+      'ชื่อฟีดเดอร์',
+      'Ia (A)',
+      'Ib (A)',
+      'Ic (A)',
+      'In (A)',
+      'Inc คำนวณ (A)',
+      'Harmonic Ratio (E)',
+      '%Unbalance (%Iub)',
+      'สถานะความเสี่ยง',
+      'ผู้ตรวจ'
+    ];
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#dbeafe');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
 /**
  * รองรับการดึงข้อมูลสถานะและสรุปผลเปรียบเทียบ (GET)
  */
@@ -81,6 +108,32 @@ function doGet(e) {
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) {
       return responseJSON({ success: true, transformers: [] });
+    }
+
+    // อ่านข้อมูลจากชีต "บันทึกฟีดเดอร์" (ถ้ามี) เพื่อส่งกลับไปให้หน้าเว็บแสดงผลแยกฟีดเดอร์
+    const feederMap = {};
+    const feederSheet = ss.getSheetByName(FEEDER_SHEET_NAME);
+    if (feederSheet) {
+      const fData = feederSheet.getDataRange().getValues();
+      for (let j = 1; j < fData.length; j++) {
+        const fRow = fData[j];
+        const fTrId = String(fRow[1] || '').trim();
+        if (!fTrId) continue;
+        if (!feederMap[fTrId]) feederMap[fTrId] = [];
+        feederMap[fTrId].push({
+          timestamp: fRow[0],
+          label: fRow[2] || 'Feeder',
+          ia: fRow[3] !== undefined ? fRow[3] : '',
+          ib: fRow[4] !== undefined ? fRow[4] : '',
+          ic: fRow[5] !== undefined ? fRow[5] : '',
+          inVal: fRow[6] !== undefined ? fRow[6] : '',
+          inc: fRow[7] !== undefined ? fRow[7] : '',
+          e: fRow[8] !== undefined ? fRow[8] : '',
+          iub: fRow[9] !== undefined ? fRow[9] : '',
+          riskLevel: fRow[10] || '',
+          inspector: fRow[11] || ''
+        });
+      }
     }
 
     const results = [];
@@ -110,7 +163,8 @@ function doGet(e) {
         opsa: row[20] || '', // Col U (idx 20): %Load OPSA
         finalScore: row[28] || '', // Col AC (idx 28): คะแนน (ฐาน 90)
         finalLevel: row[31] || row[6] || 'สูง', // Col AF (idx 31): ระดับสุดท้าย
-        remarks: row[32] || '' // Col AG (idx 32): หมายเหตุ
+        remarks: row[32] || '', // Col AG (idx 32): หมายเหตุ
+        feeders: feederMap[trId] || []
       });
     }
 
@@ -251,7 +305,31 @@ function doPost(e) {
       sheet.getRange(targetRowIndex, 33).setValue(noteText.trim());
     }
 
-    // 2. บันทึกข้อมูลการเดินไล่สายลงชีต "บันทึกไล่สาย" (ถ้ามี)
+    // 2. บันทึกข้อมูลค่าวัดแยกรายฟีดเดอร์ลงชีต "บันทึกฟีดเดอร์" (ถ้ามี)
+    if (contents.feeders && Array.isArray(contents.feeders) && contents.feeders.length > 0) {
+      const feederSheet = getOrCreateFeederSheet(ss);
+      const inspectorName = contents.inspector || '-';
+      const nowFormatted = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd HH:mm:ss');
+
+      contents.feeders.forEach((f) => {
+        feederSheet.appendRow([
+          nowFormatted,
+          trId,
+          f.label || 'Feeder',
+          f.ia || '',
+          f.ib || '',
+          f.ic || '',
+          f.inVal !== undefined && f.inVal !== '' ? f.inVal : (f.in || ''),
+          f.inc || '',
+          f.e || '',
+          f.iub || '',
+          f.riskLevel || '',
+          inspectorName
+        ]);
+      });
+    }
+
+    // 3. บันทึกข้อมูลการเดินไล่สายลงชีต "บันทึกไล่สาย" (ถ้ามี)
     if (contents.lineTracing && Array.isArray(contents.lineTracing) && contents.lineTracing.length > 0) {
       const traceSheet = getOrCreateTraceSheet(ss);
       const inspectorName = contents.inspector || '-';
